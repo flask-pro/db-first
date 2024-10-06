@@ -1,0 +1,91 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=69", "wheel"]
+
+[project]
+authors = [
+  {name = "Konstantin Fadeev", email = "fadeev@legalact.pro"}
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Database",
+  "Topic :: Software Development :: Libraries"
+]
+dependencies = [
+  "SQLAlchemy>=2.0.9",
+  "marshmallow>=3.14.1"
+]
+description = "CRUD tools for working with database via SQLAlchemy."
+license = {file = "LICENSE"}
+name = "DB-First"
+readme = "README.md"
+requires-python = ">=3.9"
+version = "1.0.0"
+
+[project.optional-dependencies]
+dev = [
+  "build==1.2.2",
+  "pre-commit==3.8.0",
+  "pytest==8.3.3",
+  "pytest-cov==5.0.0",
+  "python-dotenv==1.0.1",
+  "tox==4.21.2",
+  "twine==5.1.1"
+]
+
+[project.urls]
+changelog = "https://github.com/flask-pro/db_first/blob/master/CHANGES.md"
+repository = "https://github.com/flask-pro/db_first"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+
+[tool.black]
+include = '\.pyi?$'
+line-length = 100
+skip-string-normalization = true
+target-version = ['py312']
+
+[tool.docformatter]
+black = true
+non-cap = ["docformatter"]
+non-strict = false
+recursive = true
+style = 'sphinx'
+wrap-descriptions = 100
+wrap-summaries = 100
+
+[tool.docsig]
+check-class = true
+check-dunders = true
+check-nested = true
+check-overridden = true
+check-property-returns = true
+check-protected = true
+check-protected-class-methods = true
+disable = ["SIG101"]
+
+[tool.setuptools.packages.find]
+include = ["db_first*"]
+where = ["src"]
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    env_list =
+        py312
+        py311
+        py310
+        py39
+    [testenv]
+    allowlist_externals = *
+    commands =
+        pip install -q -e ".[dev]"
+        pip install -q -e .
+        pytest
+"""

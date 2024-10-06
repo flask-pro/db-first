@@ -1,39 +1,3 @@
-# DB-First
-
-CRUD tools for working with database via SQLAlchemy.
-
-<!--TOC-->
-
-- [DB-First](#db-first)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Example](#example)
-
-<!--TOC-->
-
-## Features
-
-* CreateMixin, ReadMixin, UpdateMixin, DeleteMixin for CRUD operation for database.
-* PaginateMixin for get paginated data from database.
-* QueryMaker class for create query 'per-one-model'.
-* Marshmallow (https://github.com/marshmallow-code/marshmallow) schemas for validating input data.
-* Marshmallow schemas for deserialization SQLAlchemy result object to `dict`.
-
-## Installation
-
-Recommended using the latest version of Python. DB-First supports Python 3.9 and newer.
-
-Install and update using `pip`:
-
-```shell
-$ pip install -U db_first
-```
-
-## Example
-
-File with application initialization `main.py`:
-
-```python
 from uuid import UUID
 
 from db_first import BaseCRUD
@@ -113,5 +77,3 @@ if __name__ == '__main__':
     print('Items as objects:', items)
     items = item.paginate(sort_created_at='desc', jsonify=True)
     print('Items as dicts:', items)
-
-```
