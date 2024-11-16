@@ -49,7 +49,7 @@ class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, Paginatio
         output_schema_of_create = OutputSchema
         output_schema_of_read = OutputSchema
         output_schema_of_update = OutputSchema
-        output_schema_of_paginate = OutputSchema
+        schema_of_paginate = OutputSchema
         sortable = ['created_at']
 
 
@@ -58,22 +58,22 @@ if __name__ == '__main__':
 
     first_new_item = item.create(data={'data': 'first'})
     print('Item as object:', first_new_item)
-    second_new_item = item.create(data={'data': 'second'}, jsonify=True)
+    second_new_item = item.create(data={'data': 'second'}, serialize=True)
     print('Item as dict:', second_new_item)
 
     first_item = item.read(first_new_item.id)
     print('Item as object:', first_item)
-    first_item = item.read(first_new_item.id, jsonify=True)
+    first_item = item.read(first_new_item.id, serialize=True)
     print('Item as dict:', first_item)
 
     updated_first_item = item.update(data={'id': first_new_item.id, 'data': 'updated_first'})
     print('Item as object:', updated_first_item)
     updated_second_item = item.update(
-        data={'id': UUID(second_new_item['id']), 'data': 'updated_second'}, jsonify=True
+        data={'id': UUID(second_new_item['id']), 'data': 'updated_second'}, serialize=True
     )
     print('Item as dict:', updated_second_item)
 
     items = item.paginate(sort_created_at='desc')
     print('Items as objects:', items)
-    items = item.paginate(sort_created_at='desc', jsonify=True)
+    items = item.paginate(sort_created_at='desc', serialize=True)
     print('Items as dicts:', items)

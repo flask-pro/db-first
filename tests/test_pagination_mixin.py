@@ -63,7 +63,7 @@ def test_controller__get_fields_of_list(fx_db, fx_parent_controller):
     fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
 
     fields = ['id']
-    items = fx_parent_controller.paginate(fields=fields, jsonify=True)
+    items = fx_parent_controller.paginate(fields=fields, serialize=True)
     assert items['items']
 
     for item in items['items']:
@@ -154,7 +154,7 @@ def test_controller__without_meta_pagination(fx_db, fx_parent_schema_of_create):
     custom_controller = CustomController()
     custom_controller.create(data={'first': next(UNIQUE_STRING)})
 
-    items = custom_controller.paginate(fields={'id': ...})
+    items = custom_controller.paginate(fields=['id'])
     assert '_metadata' not in items
     assert items['items']
 
@@ -200,7 +200,7 @@ def test_controller__fields_for_relations(
         data={'first': next(UNIQUE_STRING), 'parent_id': new_parent.id}
     )
 
-    items = fx_parent_controller.paginate(id=new_parent.id, jsonify=True)
+    items = fx_parent_controller.paginate(id=new_parent.id, serialize=True)
     assert len(items['items']) == 1
     assert items['items'][0]['id'] == str(new_parent.id)
     assert items['items'][0]['created_at'] == new_parent.created_at.isoformat()

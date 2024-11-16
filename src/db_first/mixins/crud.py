@@ -2,13 +2,32 @@ from typing import Any
 
 from sqlalchemy import delete
 from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.engine import Result
 
 
 class CreateMixin:
-    """Create object in database."""
+    """Create object in database.
 
-    def _create_object(self, **data) -> Result:
+    This mixin supports the following options in the Meta class:
+    ```
+    class CustomController(CreateMixin, BaseCRUD):
+        class Meta:
+            session = Session
+            model = Model
+            input_schema_of_create = InputSchema
+            output_schema_of_create = OutputSchema
+
+    custom_controller = CustomController()
+    ```
+
+    `input_schema_of_create` - marshmallow schema for validating and deserialization input data.
+    `output_schema_of_create` - marshmallow schema for serialization output data.
+    """
+
+    def create_object(self, **data) -> Result:
+        """If this method does not suit you, simply override it in your class."""
+
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
 
@@ -17,14 +36,12 @@ class CreateMixin:
         session.commit()
         return new_obj
 
-    def create(self, data: dict, validating: bool = True, jsonify: bool = False) -> Result or dict:
-        if validating:
-            self._deserialize_data('input_schema_of_create', data)
+    def create(self, data: dict, serialize: bool = False) -> Result or dict:
+        deserialized_data = self.deserialize_data('input_schema_of_create', data)
+        new_object = self.create_object(**deserialized_data)
 
-        new_object = self._create_object(**data)
-
-        if jsonify:
-            return self._data_to_json('output_schema_of_create', new_object)
+        if serialize:
+            return self.serialize_data('output_schema_of_create', new_object)
 
         return new_object
 
@@ -32,16 +49,18 @@ class CreateMixin:
 class ReadMixin:
     """Read object from database."""
 
-    def _read_object(self, id: Any) -> Result:
+    def get_object(self, id: Any) -> Result:
+        """If this method does not suit you, simply override it in your class."""
+
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
         return session.scalars(select(model).where(model.id == id)).one()
 
-    def read(self, id, jsonify: bool = False) -> Result or dict:
-        obj = self._read_object(id)
+    def read(self, id, serialize: bool = False) -> Result or dict:
+        obj = self.get_object(id)
 
-        if jsonify:
-            return self._data_to_json('output_schema_of_read', obj)
+        if serialize:
+            return self.serialize_data('output_schema_of_read', obj)
 
         return obj
 
@@ -49,24 +68,24 @@ class ReadMixin:
 class UpdateMixin:
     """Update object in database."""
 
-    def _update_object(self, id: Any, **data) -> Result:
+    def update_object(self, id: Any, **data) -> Result:
+        """If this method does not suit you, simply override it in your class."""
+
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
 
+        stmt = update(model).where(model.id == id).values(**data)
+        session.execute(stmt)
+
         obj = session.scalars(select(model).where(model.id == id)).one()
-        for k, v in data.items():
-            setattr(obj, k, v)
-        session.commit()
         return obj
 
-    def update(self, data: dict, validating: bool = True, jsonify: bool = False) -> Result or dict:
-        if validating:
-            self._deserialize_data('input_schema_of_update', data)
+    def update(self, data: dict, serialize: bool = False) -> Result or dict:
+        deserialized_data = self.deserialize_data('input_schema_of_update', data)
+        updated_object = self.update_object(**deserialized_data)
 
-        updated_object = self._update_object(**data)
-
-        if jsonify:
-            return self._data_to_json('output_schema_of_update', updated_object)
+        if serialize:
+            return self.serialize_data('output_schema_of_update', updated_object)
 
         return updated_object
 
@@ -74,12 +93,13 @@ class UpdateMixin:
 class DeleteMixin:
     """Delete object from database."""
 
-    def _delete_object(self, id: Any) -> None:
+    def delete_object(self, id: Any) -> None:
+        """If this method does not suit you, simply override it in your class."""
+
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
 
         session.execute(delete(model).where(model.id == id))
-        session.commit()
 
     def delete(self, id: Any) -> None:
-        self._delete_object(id)
+        self.delete_object(id)

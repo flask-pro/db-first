@@ -86,5 +86,3 @@ repos:
   - id: bandit
     args: [-c, pyproject.toml]
     additional_dependencies: ['bandit[toml]']
-default_language_version:
-  python: python3.9

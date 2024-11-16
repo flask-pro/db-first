@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy import Select
 from sqlalchemy import select
 
+from ..exc import OptionNotFound
 from ..query_maker import QueryMaker
 
 
@@ -21,7 +22,7 @@ class PaginationMixin:
             interval_filterable = ['id']
             sortable = ['id']
             searchable = ['id']
-            output_schema_of_paginate = Schema
+            schema_of_paginate = Schema
 
     custom_controller = CustomController()
     ```
@@ -30,15 +31,19 @@ class PaginationMixin:
     `interval_filterable` - list of fields allowed for filtration interval.
     `sortable` - list of fields allowed for sorting.
     `searchable` - a list of fields allowed for search for by substring.
-    `output_schema_of_paginate` - marshmallow schema for jsonify.
+    `schema_of_paginate` - marshmallow schema for serialize.
     """
 
     SORT_PREFIX = 'sort_'
 
-    def _extract_filterable_params(self, **kwargs) -> Optional[dict]:
-        fields = self._get_option_from_meta('filterable', tuple())
-
+    def _extract_filterable_params(self, **kwargs) -> dict:
         filterable_params = {}
+
+        try:
+            fields = self._get_option_from_meta('filterable')
+        except OptionNotFound:
+            return filterable_params
+
         for field in fields:
             if field in kwargs:
                 filterable_params[field] = kwargs[field]
@@ -46,9 +51,13 @@ class PaginationMixin:
         return filterable_params
 
     def _extract_interval_filterable_params(self, **kwargs) -> Optional[dict]:
-        fields = self._get_option_from_meta('interval_filterable', tuple())
-
         interval_filterable_params = {}
+
+        try:
+            fields = self._get_option_from_meta('interval_filterable')
+        except OptionNotFound:
+            return interval_filterable_params
+
         for field in fields:
             start_field_name = f'start_{field}'
             if start_field_name in kwargs:
@@ -61,9 +70,13 @@ class PaginationMixin:
         return interval_filterable_params
 
     def _extract_sortable_params(self, **kwargs) -> Optional[dict]:
-        fields = self._get_option_from_meta('sortable', tuple())
-
         sortable_params = {}
+
+        try:
+            fields = self._get_option_from_meta('sortable')
+        except OptionNotFound:
+            return sortable_params
+
         for field in fields:
             field_name_of_sorting = f'{self.SORT_PREFIX}{field}'
             if field_name_of_sorting in kwargs:
@@ -72,7 +85,7 @@ class PaginationMixin:
         return sortable_params
 
     def _extract_searchable_params(self, search: str) -> Optional[dict]:
-        fields = self._get_option_from_meta('searchable', tuple())
+        fields = self._get_option_from_meta('searchable')
         searchable_params = {field: search for field in fields}
         return searchable_params
 
@@ -99,7 +112,7 @@ class PaginationMixin:
         page: int = 1,
         per_page: Optional[int] = 20,
         max_per_page: Optional[int] = 100,
-        jsonify: bool = False,
+        serialize: bool = False,
         search: Optional[str] = ...,
         include_metadata: bool = False,
         fields: Optional[list] = None,
@@ -146,8 +159,8 @@ class PaginationMixin:
         stmt = stmt.limit(per_page).offset((page - 1) * per_page)
         paginated_rows = session.scalars(stmt).all()
 
-        if jsonify:
-            items['items'] = self._data_to_json('output_schema_of_paginate', paginated_rows, fields)
+        if serialize:
+            items['items'] = self.serialize_data('schema_of_paginate', paginated_rows, fields)
         else:
             items['items'] = paginated_rows
 
