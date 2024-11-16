@@ -166,7 +166,7 @@ def fx_parent_controller(
             interval_filterable = ['created_at']
             sortable = ['created_at']
             searchable = ['first']
-            output_schema_of_paginate = fx_parent_paginate_schema
+            schema_of_paginate = fx_parent_paginate_schema
 
     return Parent()
 
