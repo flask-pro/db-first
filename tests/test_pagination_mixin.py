@@ -6,17 +6,17 @@ import pytest
 import sqlalchemy
 from db_first import BaseCRUD
 from db_first.mixins import CreateMixin
-from db_first.mixins import PaginationMixin
+from db_first.mixins import ReadMixin
 from sqlalchemy import select
 
 from .conftest import UNIQUE_STRING
 
 
 def test_controller__pagination_without_metadata(fx_parent_controller):
-    fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
-    fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
 
-    items = fx_parent_controller.paginate()
+    items = fx_parent_controller.read()
     assert not items.get('_metadata')
 
     for item in items['items']:
@@ -27,7 +27,7 @@ def test_controller__pagination(fx_parents__non_deletion, fx_parent_controller):
     total_items_number = 10
     ids = [fx_parents__non_deletion().id for _ in range(total_items_number)]
 
-    items = fx_parent_controller.paginate(
+    items = fx_parent_controller.read(
         page=1, per_page=2, max_per_page=20, include_metadata=True, id=ids
     )
     assert items['items']
@@ -41,9 +41,9 @@ def test_controller__pagination(fx_parents__non_deletion, fx_parent_controller):
 def test_controller__sorting(fx_parents__non_deletion, fx_parent_controller):
     _ = [fx_parents__non_deletion() for _ in range(10)]
 
-    items = fx_parent_controller.paginate(sort_created_at='asc')
+    items = fx_parent_controller.read(sort_created_at='asc')
     asc_first_item = items['items'][0].id
-    items = fx_parent_controller.paginate(sort_created_at='desc')
+    items = fx_parent_controller.read(sort_created_at='desc')
     desc_first_item = items['items'][0].id
     assert asc_first_item != desc_first_item
 
@@ -52,7 +52,7 @@ def test_controller__searching(fx_parents__non_deletion, fx_parent_controller):
     new_item = fx_parents__non_deletion()
     fx_parents__non_deletion()
 
-    items = fx_parent_controller.paginate(search=new_item.first)
+    items = fx_parent_controller.read(search_first=new_item.first)
     for item in items['items']:
         assert item.first == new_item.first
 
@@ -60,10 +60,10 @@ def test_controller__searching(fx_parents__non_deletion, fx_parent_controller):
 def test_controller__get_fields_of_list(fx_db, fx_parent_controller):
     _, _, _, Fathers = fx_db
 
-    fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
 
     fields = ['id']
-    items = fx_parent_controller.paginate(fields=fields, serialize=True)
+    items = fx_parent_controller.read(fields=fields, serialize=True)
     assert items['items']
 
     for item in items['items']:
@@ -77,21 +77,21 @@ def test_controller__filtrating(fx_parents__non_deletion, fx_parent_controller):
     patched_item_payload = {'id': first_item.id, 'first': 'first for test filtrating'}
     patched_first_item = fx_parent_controller.update(data=patched_item_payload)
 
-    items = fx_parent_controller.paginate(first=patched_first_item.first)
+    items = fx_parent_controller.read(first=patched_first_item.first)
     assert len(items['items']) == 1
     assert items['items'][0].id == first_item.id
 
-    items = fx_parent_controller.paginate(page=1, per_page=1, first=patched_first_item.first)
+    items = fx_parent_controller.read(page=1, per_page=1, first=patched_first_item.first)
     assert items['items']
     assert items['items'][0].id == first_item.id
 
 
 def test_controller__interval_filtration(fx_parent_controller):
-    item_first = fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
-    item_second = fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
-    item_third = fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
+    item_first = fx_parent_controller.create(first=next(UNIQUE_STRING))
+    item_second = fx_parent_controller.create(first=next(UNIQUE_STRING))
+    item_third = fx_parent_controller.create(first=next(UNIQUE_STRING))
 
-    items_asc = fx_parent_controller.paginate(
+    items_asc = fx_parent_controller.read(
         include_metadata=True,
         id=[item_first.id, item_second.id, item_third.id],
         sort_created_at='asc',
@@ -105,7 +105,7 @@ def test_controller__interval_filtration(fx_parent_controller):
     assert items_asc['items'][0].id == item_first.id
     assert items_asc['items'][1].id == item_second.id
 
-    items_desc = fx_parent_controller.paginate(
+    items_desc = fx_parent_controller.read(
         include_metadata=True,
         id=[item_first.id, item_second.id, item_third.id],
         sort_created_at='desc',
@@ -120,31 +120,52 @@ def test_controller__interval_filtration(fx_parent_controller):
     assert items_desc['items'][1].id == item_first.id
 
 
-@pytest.mark.parametrize('page', [-1, 0, 1_000_000])
-@pytest.mark.parametrize('per_page', [-1, 0, 1_000_000])
-def test_controller__get_over_page(fx_parent_controller, page, per_page):
-    fx_parent_controller.create(data={'first': next(UNIQUE_STRING)})
+@pytest.mark.parametrize('page', [-1, 0])
+@pytest.mark.parametrize('per_page', [-1, 0])
+def test_controller__get_non_exist_page(fx_parent_controller, page, per_page):
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
 
-    items = fx_parent_controller.paginate(page=page, per_page=per_page, include_metadata=True)
-    assert items['_metadata']['pagination']['page'] == page
+    items = fx_parent_controller.read(page=page, per_page=per_page, include_metadata=True)
 
-    if per_page <= 0:
-        assert items['_metadata']['pagination']['per_page'] == per_page
-        assert items['_metadata']['pagination']['pages'] == 0
-        assert items['_metadata']['pagination']['total'] == 0
-    if per_page > 100:
-        assert items['_metadata']['pagination']['per_page'] == 100
+    assert items['_metadata']['pagination']['per_page'] == 0
+    assert items['_metadata']['pagination']['pages'] == 0
+    assert items['_metadata']['pagination']['total'] > 0
+    assert not items['items']
 
-        total = items['_metadata']['pagination']['total']
-        assert items['_metadata']['pagination']['pages'] == ceil(total / 100)
 
+@pytest.mark.parametrize('page', [1, 2])
+@pytest.mark.parametrize('per_page', [1, 2])
+def test_controller__get_pages(fx_parent_controller, page, per_page):
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
+
+    items = fx_parent_controller.read(page=page, per_page=per_page, include_metadata=True)
+
+    assert 1 <= items['_metadata']['pagination']['per_page'] <= 100
+    assert items['_metadata']['pagination']['pages'] == 1
+    assert items['_metadata']['pagination']['total'] > 0
+    assert items['items']
+
+
+@pytest.mark.parametrize('page', [101, 1_000_000])
+@pytest.mark.parametrize('per_page', [101, 1_000_000])
+def test_controller__get_over_pages(fx_parent_controller, page, per_page):
+    fx_parent_controller.create(first=next(UNIQUE_STRING))
+
+    items = fx_parent_controller.read(page=page, per_page=per_page, include_metadata=True)
+
+    assert items['_metadata']['pagination']['per_page'] == 100
+    assert items['_metadata']['pagination']['pages'] == 1
+    assert items['_metadata']['pagination']['total'] > 0
+
+    total = items['_metadata']['pagination']['total']
+    assert items['_metadata']['pagination']['pages'] == ceil(total / 100)
     assert not items['items']
 
 
 def test_controller__without_meta_pagination(fx_db, fx_parent_schema_of_create):
     db_session, Parents, _, _ = fx_db
 
-    class CustomController(CreateMixin, PaginationMixin, BaseCRUD):
+    class CustomController(CreateMixin, ReadMixin, BaseCRUD):
         class Meta:
             model = Parents
             statement = select(model)
@@ -152,9 +173,9 @@ def test_controller__without_meta_pagination(fx_db, fx_parent_schema_of_create):
             input_schema_of_create = fx_parent_schema_of_create
 
     custom_controller = CustomController()
-    custom_controller.create(data={'first': next(UNIQUE_STRING)})
+    custom_controller.create(first=next(UNIQUE_STRING))
 
-    items = custom_controller.paginate(fields=['id'])
+    items = custom_controller.read(fields=['id'])
     assert '_metadata' not in items
     assert items['items']
 
@@ -169,7 +190,7 @@ def test_controller__statement(
 
     statement = sqlalchemy.select(Parents).join(Children)
 
-    items = fx_parent_controller.paginate(
+    items = fx_parent_controller.read(
         statement=statement,
         page=1,
         per_page=2,
@@ -192,15 +213,11 @@ def test_controller__statement(
 def test_controller__fields_for_relations(
     fx_parent_controller, fx_child_controller, fx_father_controller
 ):
-    new_father = fx_father_controller.create(data={'first': next(UNIQUE_STRING)})
-    new_parent = fx_parent_controller.create(
-        data={'first': next(UNIQUE_STRING), 'father_id': new_father.id}
-    )
-    new_child = fx_child_controller.create(
-        data={'first': next(UNIQUE_STRING), 'parent_id': new_parent.id}
-    )
+    new_father = fx_father_controller.create(first=next(UNIQUE_STRING))
+    new_parent = fx_parent_controller.create(first=next(UNIQUE_STRING), father_id=new_father.id)
+    new_child = fx_child_controller.create(first=next(UNIQUE_STRING), parent_id=new_parent.id)
 
-    items = fx_parent_controller.paginate(id=new_parent.id, serialize=True)
+    items = fx_parent_controller.read(id=new_parent.id, serialize=True)
     assert len(items['items']) == 1
     assert items['items'][0]['id'] == str(new_parent.id)
     assert items['items'][0]['created_at'] == new_parent.created_at.isoformat()

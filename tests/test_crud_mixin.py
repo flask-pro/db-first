@@ -13,7 +13,6 @@ from db_first.mixins.crud import ReadMixin
 from db_first.mixins.crud import UpdateMixin
 from marshmallow import fields
 from marshmallow import Schema
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
@@ -37,6 +36,9 @@ def test_crud_mixin(fx_db_connection):
         id = fields.UUID()
         first = fields.String()
 
+    class SchemaOfRead(Schema):
+        id = fields.UUID()
+
     class TestCreate(CreateMixin, BaseCRUD):
         class Meta:
             model = TestModel
@@ -45,8 +47,8 @@ def test_crud_mixin(fx_db_connection):
             output_schema_of_create = SchemaOfResultCreate
 
     data_for_create = {'first': next(UNIQUE_STRING)}
-    TestCreate().create(data=data_for_create, serialize=True)
-    new_data = TestCreate().create(data=data_for_create, serialize=True)
+    TestCreate().create(**data_for_create, serialize=True)
+    new_data = TestCreate().create(**data_for_create, serialize=True)
     new_data_for_assert = deepcopy(new_data)
     assert new_data_for_assert.pop('id')
     assert new_data_for_assert == data_for_create
@@ -55,10 +57,12 @@ def test_crud_mixin(fx_db_connection):
         class Meta:
             model = TestModel
             session = db_session
+            filterable = ['id']
+            input_schema_of_read = SchemaOfRead
             output_schema_of_read = SchemaOfResultCreate
 
-    data_for_read = TestRead().read(id=UUID(new_data['id']), serialize=True)
-    assert new_data == data_for_read
+    data_for_read = TestRead().read(id=UUID(new_data['id']), serialize=True)['items']
+    assert new_data == data_for_read[0]
 
     class TestUpdate(UpdateMixin, BaseCRUD):
         class Meta:
@@ -81,8 +85,7 @@ def test_crud_mixin(fx_db_connection):
 
     TestDelete().delete(id=UUID(new_data['id']))
 
-    with pytest.raises(NoResultFound):
-        TestRead().read(id=UUID(new_data['id']))
+    assert not TestRead().read(id=UUID(new_data['id']))['items']
 
 
 def test_crud_mixin__wrong_meta(fx_db_connection):
@@ -117,16 +120,16 @@ def test_crud_mixin__wrong_options_in_meta(fx_db_connection):
 
     data_for_create = {'first': next(UNIQUE_STRING)}
     with pytest.raises(OptionNotFound) as e:
-        TestController().create(data=data_for_create, serialize=True)
+        TestController().create(data=data_for_create, deserialize=True)
     assert e.value.args[0] == 'Option <input_schema_of_create> not set in Meta class.'
 
     with pytest.raises(OptionNotFound) as e:
         TestController().read(id=uuid4(), serialize=True)
-    assert e.value.args[0] == 'Option <session> not set in Meta class.'
+    assert e.value.args[0] == 'Option <model> not set in Meta class.'
 
     data_for_update = {'id': uuid4(), 'first': next(UNIQUE_STRING)}
     with pytest.raises(OptionNotFound) as e:
-        TestController().update(data=data_for_update, serialize=True)
+        TestController().update(data=data_for_update, deserialize=True)
     assert e.value.args[0] == 'Option <input_schema_of_update> not set in Meta class.'
 
     with pytest.raises(OptionNotFound) as e:
