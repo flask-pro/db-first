@@ -58,7 +58,7 @@ class CreateMixin:
 
 
 class ReadMixin:
-    """Read object from database.
+    """Read objects from database.
 
     Mixin with get paginated result.
 
@@ -77,10 +77,14 @@ class ReadMixin:
     custom_controller = CustomController()
     ```
     Required options:
-    `input_schema_of_read` - marshmallow schema for serialize.
-    `output_schema_of_read` - marshmallow schema for serialize.
+    `session` - session object for connect to database.
+    `model` - sqlalchemy model.
+    `input_schema_of_read` - marshmallow schema for validating and deserialization input data.
+    `output_schema_of_read` - marshmallow schema for serialization output data.
 
     Optional options:
+    `per_page` - items per page (default = 20).
+    `max_per_page` - maximum items per page (default = 100).
     `filterable` - list of fields allowed for filtration.
     `interval_filterable` - list of fields allowed for filtration interval.
     `sortable` - list of fields allowed for sorting.
@@ -105,7 +109,7 @@ class ReadMixin:
         pages, total = self._calculate_items_per_page(session, statement, per_page)
         return {'pagination': {'page': page, 'per_page': per_page, 'pages': pages, 'total': total}}
 
-    def paginate(
+    def _paginate(
         self,
         statement: Optional[Select],
         page: int = 1,
@@ -180,7 +184,7 @@ class ReadMixin:
         if max_per_page is None:
             max_per_page = self._get_option_from_meta('max_per_page', 100)
 
-        items = self.paginate(
+        items = self._paginate(
             statement=stmt,
             page=page,
             per_page=per_page,
@@ -194,7 +198,23 @@ class ReadMixin:
 
 
 class UpdateMixin:
-    """Update object in database."""
+    """Update object in database.
+
+    This mixin supports the following options in the Meta class:
+    ```
+    class CustomController(CreateMixin, BaseCRUD):
+        class Meta:
+            session = Session
+            model = Model
+            input_schema_of_update = InputSchema
+            output_schema_of_update = OutputSchema
+
+    custom_controller = CustomController()
+    ```
+
+    `input_schema_of_update` - marshmallow schema for validating and deserialization input data.
+    `output_schema_of_update` - marshmallow schema for serialization output data.
+    """
 
     def update_object(self, id: Any, **kwargs) -> Result:
         """If this method does not suit you, simply override it in your class."""
