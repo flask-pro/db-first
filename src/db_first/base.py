@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Optional
 
 from sqlalchemy.engine import Result
 
@@ -8,7 +9,7 @@ from .exc import OptionNotFound
 
 class BaseCRUD:
     @classmethod
-    def _get_option_from_meta(cls, name: str) -> Any:
+    def _get_option_from_meta(cls, name: str, default: Optional[Any] = ...) -> Any:
         try:
             meta = cls.Meta
         except AttributeError:
@@ -17,7 +18,10 @@ class BaseCRUD:
         try:
             option = getattr(meta, name)
         except AttributeError:
-            raise OptionNotFound(f'Option <{name}> not set in Meta class.')
+            if default is Ellipsis:
+                raise OptionNotFound(f'Option <{name}> not set in Meta class.')
+            else:
+                option = default
 
         return option
 

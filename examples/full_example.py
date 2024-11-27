@@ -4,7 +4,6 @@ from db_first import BaseCRUD
 from db_first.base_model import ModelMixin
 from db_first.mixins import CreateMixin
 from db_first.mixins import DeleteMixin
-from db_first.mixins import PaginationMixin
 from db_first.mixins import ReadMixin
 from db_first.mixins import UpdateMixin
 from marshmallow import fields
@@ -36,17 +35,22 @@ class InputSchemaOfUpdate(InputSchemaOfCreate):
     id = fields.UUID()
 
 
+class InputSchemaOfRead(Schema):
+    id = fields.UUID()
+
+
 class OutputSchema(InputSchemaOfUpdate):
     created_at = fields.DateTime()
 
 
-class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, PaginationMixin, BaseCRUD):
+class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD):
     class Meta:
         session = session
         model = Items
         input_schema_of_create = InputSchemaOfCreate
         input_schema_of_update = InputSchemaOfUpdate
         output_schema_of_create = OutputSchema
+        input_schema_of_read = InputSchemaOfRead
         output_schema_of_read = OutputSchema
         output_schema_of_update = OutputSchema
         schema_of_paginate = OutputSchema
@@ -56,14 +60,14 @@ class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, Paginatio
 if __name__ == '__main__':
     item = ItemController()
 
-    first_new_item = item.create(data={'data': 'first'})
+    first_new_item = item.create(deserialize=True, data='first')
     print('Item as object:', first_new_item)
-    second_new_item = item.create(data={'data': 'second'}, serialize=True)
+    second_new_item = item.create(deserialize=True, data='second', serialize=True)
     print('Item as dict:', second_new_item)
 
-    first_item = item.read(first_new_item.id)
+    first_item = item.read(id=first_new_item.id)
     print('Item as object:', first_item)
-    first_item = item.read(first_new_item.id, serialize=True)
+    first_item = item.read(id=first_new_item.id)
     print('Item as dict:', first_item)
 
     updated_first_item = item.update(data={'id': first_new_item.id, 'data': 'updated_first'})
@@ -73,7 +77,7 @@ if __name__ == '__main__':
     )
     print('Item as dict:', updated_second_item)
 
-    items = item.paginate(sort_created_at='desc')
+    items = item.read(sort_created_at='desc')
     print('Items as objects:', items)
-    items = item.paginate(sort_created_at='desc', serialize=True)
+    items = item.read(sort_created_at='desc', serialize=True)
     print('Items as dicts:', items)

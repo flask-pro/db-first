@@ -1,5 +1,5 @@
 from .base import BaseCRUD
 from .base_model import ModelMixin
-from .query_maker import QueryMaker
+from .statement_maker import StatementMaker
 
-__all__ = ['QueryMaker', 'BaseCRUD', 'ModelMixin']
+__all__ = ['BaseCRUD', 'ModelMixin', 'StatementMaker']

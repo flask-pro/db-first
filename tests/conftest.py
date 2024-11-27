@@ -4,13 +4,13 @@ from uuid import UUID
 import pytest
 from db_first import BaseCRUD
 from db_first import ModelMixin
-from db_first.mixins import PaginationMixin
 from db_first.mixins.crud import CreateMixin
 from db_first.mixins.crud import DeleteMixin
 from db_first.mixins.crud import ReadMixin
 from db_first.mixins.crud import UpdateMixin
 from marshmallow import fields
 from marshmallow import Schema
+from marshmallow import validate
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy.engine import Result
@@ -112,6 +112,22 @@ def fx_parent_schema_of_update(fx_parent_schema_of_create) -> type[Schema]:
 
 
 @pytest.fixture(scope='session')
+def fx_parent_schema_of_read() -> type[Schema]:
+    class SchemaOfRead(Schema):
+        id = fields.List(fields.UUID())
+        page = fields.Integer(validate=validate.Range(min=0))
+        max_per_page = fields.Integer(validate=validate.Range(min=0))
+        per_page = fields.Integer(validate=validate.Range(min=0))
+        sort_created_at = fields.String(validate=validate.OneOf(['asc', 'desc']))
+        search_first = fields.String()
+        first = fields.String()
+        start_created_at = fields.DateTime()
+        end_created_at = fields.DateTime()
+
+    return SchemaOfRead
+
+
+@pytest.fixture(scope='session')
 def fx_parent_output_schema(fx_father_output_schema, fx_child_output_schema) -> type[Schema]:
     class OutputSchema(Schema):
         id = fields.String(required=True)
@@ -122,14 +138,6 @@ def fx_parent_output_schema(fx_father_output_schema, fx_child_output_schema) -> 
         children = fields.Nested(fx_child_output_schema, many=True)
 
     return OutputSchema
-
-
-@pytest.fixture(scope='session')
-def fx_parent_paginate_schema(fx_parent_output_schema) -> type[Schema]:
-    class PaginateSchema(fx_parent_output_schema):
-        pass
-
-    return PaginateSchema
 
 
 @pytest.fixture(scope='session')
@@ -152,21 +160,27 @@ def fx_child_output_schema(fx_child_schema_of_create) -> type[Schema]:
 
 @pytest.fixture(scope='session')
 def fx_parent_controller(
-    fx_db, fx_parent_schema_of_create, fx_parent_schema_of_update, fx_parent_paginate_schema
+    fx_db,
+    fx_parent_schema_of_create,
+    fx_parent_schema_of_read,
+    fx_parent_schema_of_update,
+    fx_parent_output_schema,
 ):
     session_db, parents_model, _, _ = fx_db
 
-    class Parent(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, PaginationMixin, BaseCRUD):
+    class Parent(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD):
         class Meta:
             session = session_db
             model = parents_model
             input_schema_of_create = fx_parent_schema_of_create
+            output_schema_of_create = fx_parent_output_schema
             input_schema_of_update = fx_parent_schema_of_update
             filterable = ['id', 'first']
             interval_filterable = ['created_at']
             sortable = ['created_at']
             searchable = ['first']
-            schema_of_paginate = fx_parent_paginate_schema
+            input_schema_of_read = fx_parent_schema_of_read
+            output_schema_of_read = fx_parent_output_schema
 
     return Parent()
 
@@ -175,7 +189,7 @@ def fx_parent_controller(
 def fx_child_controller(fx_db, fx_child_schema_of_create):
     session_db, _, child_model, _ = fx_db
 
-    class Child(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, PaginationMixin, BaseCRUD):
+    class Child(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD):
         class Meta:
             session = session_db
             model = child_model
@@ -190,7 +204,7 @@ def fx_child_controller(fx_db, fx_child_schema_of_create):
 def fx_father_controller(fx_db, fx_father_schema_of_create):
     session_db, _, _, father_model = fx_db
 
-    class Father(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, PaginationMixin, BaseCRUD):
+    class Father(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD):
         class Meta:
             session = session_db
             model = father_model
@@ -202,15 +216,11 @@ def fx_father_controller(fx_db, fx_father_schema_of_create):
 @pytest.fixture
 def fx_parents__non_deletion(fx_parent_controller, fx_child_controller, fx_father_controller):
     def _create_item() -> Result:
-        new_father = fx_father_controller.create(data={'first': next(UNIQUE_STRING)})
+        new_father = fx_father_controller.create(first=next(UNIQUE_STRING))
         new_parent = fx_parent_controller.create(
-            data={
-                'first': next(UNIQUE_STRING),
-                'second': f'full {next(UNIQUE_STRING)}',
-                'father_id': new_father.id,
-            }
+            first=next(UNIQUE_STRING), second=f'full {next(UNIQUE_STRING)}', father_id=new_father.id
         )
-        fx_child_controller.create(data={'first': next(UNIQUE_STRING), 'parent_id': new_parent.id})
+        fx_child_controller.create(first=next(UNIQUE_STRING), parent_id=new_parent.id)
         return new_parent
 
     return _create_item
