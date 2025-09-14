@@ -25,7 +25,7 @@ license = {file = "LICENSE"}
 name = "DB-First"
 readme = "README.md"
 requires-python = ">=3.9"
-version = "2.1.0"
+version = "3.0.0"
 
 [project.optional-dependencies]
 dev = [
@@ -39,8 +39,8 @@ dev = [
 ]
 
 [project.urls]
-changelog = "https://github.com/flask-pro/db_first/blob/master/CHANGES.md"
-repository = "https://github.com/flask-pro/db_first"
+changelog = "https://github.com/flask-pro/db-first/blob/master/CHANGES.md"
+repository = "https://github.com/flask-pro/db-first"
 
 [tool.bandit]
 exclude_dirs = ["tests"]
@@ -78,6 +78,7 @@ where = ["src"]
 legacy_tox_ini = """
     [tox]
     env_list =
+        py313
         py312
         py311
         py310

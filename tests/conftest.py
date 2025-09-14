@@ -216,11 +216,15 @@ def fx_father_controller(fx_db, fx_father_schema_of_create):
 @pytest.fixture
 def fx_parents__non_deletion(fx_parent_controller, fx_child_controller, fx_father_controller):
     def _create_item() -> Result:
-        new_father = fx_father_controller.create(first=next(UNIQUE_STRING))
+        new_father = fx_father_controller.create({'first': next(UNIQUE_STRING)})
         new_parent = fx_parent_controller.create(
-            first=next(UNIQUE_STRING), second=f'full {next(UNIQUE_STRING)}', father_id=new_father.id
+            {
+                'first': next(UNIQUE_STRING),
+                'second': f'full {next(UNIQUE_STRING)}',
+                'father_id': new_father.id,
+            }
         )
-        fx_child_controller.create(first=next(UNIQUE_STRING), parent_id=new_parent.id)
+        fx_child_controller.create({'first': next(UNIQUE_STRING), 'parent_id': new_parent.id})
         return new_parent
 
     return _create_item

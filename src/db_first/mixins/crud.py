@@ -44,12 +44,12 @@ class CreateMixin:
         return new_obj
 
     def create(
-        self, deserialize: bool = False, serialize: bool = False, **kwargs: dict
+        self, data: dict, deserialize: bool = False, serialize: bool = False
     ) -> Result or dict:
         if deserialize:
-            kwargs = self.deserialize_data('input_schema_of_create', kwargs)
+            data = self.deserialize_data('input_schema_of_create', data)
 
-        new_object = self.create_object(**kwargs)
+        new_object = self.create_object(**data)
 
         if serialize:
             return self.serialize_data('output_schema_of_create', new_object)
@@ -146,7 +146,7 @@ class ReadMixin:
 
         return items
 
-    def read(
+    def paginate(
         self,
         page: int = 1,
         per_page: Optional[int] = None,
@@ -196,6 +196,27 @@ class ReadMixin:
 
         return items
 
+    def read_object(self, id: Any) -> Result:
+
+        session = self._get_option_from_meta('session')
+        model = self._get_option_from_meta('model')
+
+        stmt = select(model).where(model.id == id)
+        return session.scalars(stmt).one()
+
+    def read(
+        self, data: dict, deserialize: bool = False, serialize: bool = False
+    ) -> Result or dict:
+        if deserialize:
+            data = self.deserialize_data('input_schema_of_read', data)
+
+        object_ = self.read_object(**data)
+
+        if serialize:
+            return self.serialize_data('output_schema_of_read', object_)
+
+        return object_
+
 
 class UpdateMixin:
     """Update object in database.
@@ -222,10 +243,8 @@ class UpdateMixin:
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
 
-        stmt = update(model).where(model.id == id).values(**kwargs)
-        session.execute(stmt)
-
-        obj = session.scalars(select(model).where(model.id == id)).one()
+        stmt = update(model).where(model.id == id).values(**kwargs).returning(model)
+        obj = session.scalars(stmt).one()
         return obj
 
     def update(
@@ -253,5 +272,7 @@ class DeleteMixin:
 
         session.execute(delete(model).where(model.id == id))
 
-    def delete(self, id: Any) -> None:
-        self.delete_object(id)
+    def delete(self, data: dict, deserialize: bool = False) -> None:
+        if deserialize:
+            data = self.deserialize_data('input_schema_of_read', data)
+        self.delete_object(**data)
