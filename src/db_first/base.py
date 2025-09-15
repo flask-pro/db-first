@@ -40,7 +40,7 @@ class BaseCRUD:
         :return: cleaned object.
         """
 
-        empty_values = ('', None, [], {}, (), set())
+        empty_values = ('', None, ..., [], {}, (), set())
 
         if isinstance(data, dict):
             cleaned_dict = {k: cls._clean_data(v) for k, v in data.items()}

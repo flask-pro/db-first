@@ -15,9 +15,9 @@ CRUD tools for working with database via SQLAlchemy.
 ## Features
 
 * CreateMixin, ReadMixin, UpdateMixin, DeleteMixin for CRUD operation for database.
-* PaginateMixin for get paginated data from database.
-* QueryMaker class for create query 'per-one-model'.
-* Marshmallow (https://github.com/marshmallow-code/marshmallow) schemas for validating input data.
+* ReadMixin support paginated data from database.
+* StatementMaker class for create query 'per-one-model'.
+* Marshmallow (https://github.com/marshmallow-code/marshmallow) schemas for serialization input data.
 * Marshmallow schemas for deserialization SQLAlchemy result object to `dict`.
 
 ## Installation
@@ -97,14 +97,14 @@ class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD)
 if __name__ == '__main__':
     item = ItemController()
 
-    first_new_item = item.create(deserialize=True, data='first')
+    first_new_item = item.create({'data': 'first'}, deserialize=True)
     print('Item as object:', first_new_item)
-    second_new_item = item.create(deserialize=True, data='second', serialize=True)
+    second_new_item = item.create({'data': 'second'}, deserialize=True, serialize=True)
     print('Item as dict:', second_new_item)
 
-    first_item = item.read(id=first_new_item.id)
+    first_item = item.read({'id': first_new_item.id})
     print('Item as object:', first_item)
-    first_item = item.read(id=first_new_item.id)
+    first_item = item.read({'id': first_new_item.id})
     print('Item as dict:', first_item)
 
     updated_first_item = item.update(data={'id': first_new_item.id, 'data': 'updated_first'})
@@ -114,9 +114,10 @@ if __name__ == '__main__':
     )
     print('Item as dict:', updated_second_item)
 
-    items = item.read(sort_created_at='desc')
+    items = item.paginate(sort_created_at='desc')
     print('Items as objects:', items)
-    items = item.read(sort_created_at='desc', serialize=True)
+    items = item.paginate(sort_created_at='desc', serialize=True)
     print('Items as dicts:', items)
+
 
 ```
