@@ -38,6 +38,7 @@ build: clean venv
 
 install: build
 	$(PIP) install dist/db_first-*.tar.gz
+	$(PRE_COMMIT) install
 
 upload_to_testpypi: build
 	$(PYTHON_VENV) -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*

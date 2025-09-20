@@ -43,19 +43,6 @@ class CreateMixin:
         session.commit()
         return new_obj
 
-    def create(
-        self, data: dict, deserialize: bool = False, serialize: bool = False
-    ) -> Result or dict:
-        if deserialize:
-            data = self.deserialize_data('input_schema_of_create', data)
-
-        new_object = self.create_object(**data)
-
-        if serialize:
-            return self.serialize_data('output_schema_of_create', new_object)
-
-        return new_object
-
 
 class ReadMixin:
     """Read objects from database.
@@ -95,7 +82,7 @@ class ReadMixin:
         self, session: Session, statement: Select, per_page: int
     ) -> tuple[int, int]:
         total = session.execute(
-            statement.with_only_columns(func.count()).order_by(None)
+            statement.with_only_columns(func.count(self.Meta.model.id)).order_by(None)
         ).scalar_one()
 
         if per_page == 0:
@@ -115,9 +102,7 @@ class ReadMixin:
         page: int = 1,
         per_page: Optional[int] = 20,
         max_per_page: Optional[int] = 100,
-        serialize: bool = False,
         include_metadata: bool = False,
-        fields: Optional[list] = None,
     ) -> dict:
         session: Session = self._get_option_from_meta('session')
 
@@ -139,29 +124,20 @@ class ReadMixin:
         else:
             paginated_rows = []
 
-        if serialize:
-            items['items'] = self.serialize_data('output_schema_of_read', paginated_rows, fields)
-        else:
-            items['items'] = paginated_rows
+        items['items'] = paginated_rows
 
         return items
 
-    def paginate(
+    def base_paginate(
         self,
         page: int = 1,
         per_page: Optional[int] = None,
         max_per_page: Optional[int] = None,
         statement: Optional[Select] = None,
-        deserialize: bool = False,
-        serialize: bool = False,
         include_metadata: bool = False,
-        fields: Optional[list] = None,
         **kwargs,
     ) -> Result or dict:
         model = self._get_option_from_meta('model')
-
-        if deserialize:
-            kwargs = self.deserialize_data('input_schema_of_read', kwargs)
 
         filterable_fields = self._get_option_from_meta('filterable', ())
         interval_filterable_fields = self._get_option_from_meta('interval_filterable', ())
@@ -189,9 +165,7 @@ class ReadMixin:
             page=page,
             per_page=per_page,
             max_per_page=max_per_page,
-            serialize=serialize,
             include_metadata=include_metadata,
-            fields=fields,
         )
 
         return items
@@ -203,19 +177,6 @@ class ReadMixin:
 
         stmt = select(model).where(model.id == id)
         return session.scalars(stmt).one()
-
-    def read(
-        self, data: dict, deserialize: bool = False, serialize: bool = False
-    ) -> Result or dict:
-        if deserialize:
-            data = self.deserialize_data('input_schema_of_read', data)
-
-        object_ = self.read_object(**data)
-
-        if serialize:
-            return self.serialize_data('output_schema_of_read', object_)
-
-        return object_
 
 
 class UpdateMixin:
@@ -247,19 +208,6 @@ class UpdateMixin:
         obj = session.scalars(stmt).one()
         return obj
 
-    def update(
-        self, data: dict, deserialize: bool = False, serialize: bool = False
-    ) -> Result or dict:
-        if deserialize:
-            data = self.deserialize_data('input_schema_of_update', data)
-
-        updated_object = self.update_object(**data)
-
-        if serialize:
-            return self.serialize_data('output_schema_of_update', updated_object)
-
-        return updated_object
-
 
 class DeleteMixin:
     """Delete object from database."""
@@ -271,8 +219,3 @@ class DeleteMixin:
         model = self._get_option_from_meta('model')
 
         session.execute(delete(model).where(model.id == id))
-
-    def delete(self, data: dict, deserialize: bool = False) -> None:
-        if deserialize:
-            data = self.deserialize_data('input_schema_of_read', data)
-        self.delete_object(**data)
