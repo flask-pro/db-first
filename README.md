@@ -35,10 +35,9 @@ $ pip install -U db_first
 ### Full example
 
 ```python
-from uuid import UUID
-
 from db_first import BaseCRUD
 from db_first.base_model import ModelMixin
+from db_first.decorators import Validation
 from db_first.mixins import CreateMixin
 from db_first.mixins import DeleteMixin
 from db_first.mixins import ReadMixin
@@ -46,6 +45,8 @@ from db_first.mixins import UpdateMixin
 from marshmallow import fields
 from marshmallow import Schema
 from sqlalchemy import create_engine
+from sqlalchemy import Result
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -64,19 +65,19 @@ class Items(ModelMixin, Base):
 Base.metadata.create_all(engine)
 
 
-class InputSchemaOfCreate(Schema):
+class IdSchema(Schema):
+    id = fields.UUID()
+
+
+class SchemaOfCreate(Schema):
     data = fields.String()
 
 
-class InputSchemaOfUpdate(InputSchemaOfCreate):
-    id = fields.UUID()
+class SchemaOfUpdate(IdSchema, SchemaOfCreate):
+    """Update item schema."""
 
 
-class InputSchemaOfRead(Schema):
-    id = fields.UUID()
-
-
-class OutputSchema(InputSchemaOfUpdate):
+class OutputSchema(SchemaOfUpdate):
     created_at = fields.DateTime()
 
 
@@ -84,40 +85,43 @@ class ItemController(CreateMixin, ReadMixin, UpdateMixin, DeleteMixin, BaseCRUD)
     class Meta:
         session = session
         model = Items
-        input_schema_of_create = InputSchemaOfCreate
-        input_schema_of_update = InputSchemaOfUpdate
-        output_schema_of_create = OutputSchema
-        input_schema_of_read = InputSchemaOfRead
-        output_schema_of_read = OutputSchema
-        output_schema_of_update = OutputSchema
-        schema_of_paginate = OutputSchema
         sortable = ['created_at']
+
+    @Validation.input(SchemaOfCreate)
+    @Validation.output(OutputSchema, serialize=True)
+    def create(self, **data) -> Result:
+        return super().create_object(**data)
+
+    @Validation.input(IdSchema, keys=['id'])
+    @Validation.output(OutputSchema, serialize=True)
+    def read(self, **data) -> Result:
+        return super().read_object(data['id'])
+
+    @Validation.input(SchemaOfUpdate)
+    @Validation.output(OutputSchema, serialize=True)
+    def update(self, **data) -> Result:
+        return super().update_object(**data)
+
+    @Validation.input(IdSchema, keys=['id'])
+    def delete(self, **data) -> None:
+        super().delete_object(**data)
 
 
 if __name__ == '__main__':
-    item = ItemController()
+    item_controller = ItemController()
 
-    first_new_item = item.create({'data': 'first'}, deserialize=True)
-    print('Item as object:', first_new_item)
-    second_new_item = item.create({'data': 'second'}, deserialize=True, serialize=True)
-    print('Item as dict:', second_new_item)
+    new_item = item_controller.create(data='first')
+    print('Item as dict:', new_item)
 
-    first_item = item.read({'id': first_new_item.id})
-    print('Item as object:', first_item)
-    first_item = item.read({'id': first_new_item.id})
-    print('Item as dict:', first_item)
+    item = item_controller.read(id=new_item['id'])
+    print('Item as dict:', item)
 
-    updated_first_item = item.update(data={'id': first_new_item.id, 'data': 'updated_first'})
-    print('Item as object:', updated_first_item)
-    updated_second_item = item.update(
-        data={'id': UUID(second_new_item['id']), 'data': 'updated_second'}, serialize=True
-    )
-    print('Item as dict:', updated_second_item)
+    updated_item = item_controller.update(id=new_item['id'], data='updated_first')
+    print('Item as dict:', updated_item)
 
-    items = item.paginate(sort_created_at='desc')
-    print('Items as objects:', items)
-    items = item.paginate(sort_created_at='desc', serialize=True)
-    print('Items as dicts:', items)
-
-
+    item_controller.delete(id=new_item['id'])
+    try:
+        item = item_controller.read(id=new_item['id'])
+    except NoResultFound:
+        print('Item deleted:', item)
 ```

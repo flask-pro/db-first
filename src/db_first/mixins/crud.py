@@ -171,7 +171,6 @@ class ReadMixin:
         return items
 
     def read_object(self, id: Any) -> Result:
-
         session = self._get_option_from_meta('session')
         model = self._get_option_from_meta('model')
 
