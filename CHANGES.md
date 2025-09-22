@@ -1,3 +1,7 @@
+## Version 4.0.0
+
+* Add `Validation` decorators.
+
 ## Version 3.0.0
 
 * Add method `paginate()` to `ReadMixin`.

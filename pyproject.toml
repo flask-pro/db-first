@@ -25,7 +25,7 @@ license = {file = "LICENSE"}
 name = "DB-First"
 readme = "README.md"
 requires-python = ">=3.9"
-version = "3.0.0"
+version = "4.0.0"
 
 [project.optional-dependencies]
 dev = [
@@ -68,7 +68,7 @@ check-overridden = true
 check-property-returns = true
 check-protected = true
 check-protected-class-methods = true
-disable = ["SIG101"]
+disable = ["SIG101", "SIG501"]
 
 [tool.setuptools.packages.find]
 include = ["db_first*"]

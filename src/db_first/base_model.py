@@ -1,13 +1,12 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 
-def make_uuid4() -> UUID:
+def make_uuid4() -> uuid.UUID:
     return uuid.uuid4()
 
 

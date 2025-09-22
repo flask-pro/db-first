@@ -116,4 +116,5 @@ class StatementMaker:
         self._add_interval_filtration()
         self._add_searching()
         self._add_sorting()
+
         return self.stmt
