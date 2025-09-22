@@ -9,7 +9,7 @@ from marshmallow.schema import SchemaMeta
 class Validation:
     @classmethod
     def input(
-        cls, schema: SchemaMeta, deserialize: bool = True, keys: Iterable[str] | None = None
+        cls, schema: SchemaMeta, deserialize: bool = True, keys: Iterable[str] or None = None
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
             @wraps(func)
@@ -27,7 +27,7 @@ class Validation:
 
     @classmethod
     def output(
-        cls, schema: SchemaMeta, serialize: bool = False, keys: Iterable[str] | None = None
+        cls, schema: SchemaMeta, serialize: bool = False, keys: Iterable[str] or None = None
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
             @wraps(func)

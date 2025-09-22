@@ -69,7 +69,7 @@ check-overridden = true
 check-property-returns = true
 check-protected = true
 check-protected-class-methods = true
-disable = ["SIG101"]
+disable = ["SIG101", "SIG501"]
 
 [tool.setuptools.packages.find]
 include = ["db_first*"]

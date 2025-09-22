@@ -10,7 +10,6 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
-from .conftest import UNIQUE_STRING
 from src.db_first import BaseCRUD
 from src.db_first import ModelMixin
 from src.db_first.decorators import Validation
@@ -20,6 +19,7 @@ from src.db_first.mixins.crud import CreateMixin
 from src.db_first.mixins.crud import DeleteMixin
 from src.db_first.mixins.crud import ReadMixin
 from src.db_first.mixins.crud import UpdateMixin
+from tests.conftest import UNIQUE_STRING
 
 
 class TestSchema(Schema):

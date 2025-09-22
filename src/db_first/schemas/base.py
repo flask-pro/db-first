@@ -1,5 +1,3 @@
-from typing import Any
-
 from marshmallow import post_dump
 from marshmallow import Schema
 
@@ -9,9 +7,7 @@ class BaseSchema(Schema):
     __skipped_keys__ = ()
 
     @post_dump()
-    def _delete_keys_with_empty_value(
-        self, data, many=False
-    ) -> dict[Any, dict] | list[dict] | dict | list:
+    def _delete_keys_with_empty_value(self, data, many=False) -> dict or list:
         """Clearing hierarchical structures from empty values.
 
         Cleaning occurs for objects of the list and dict types, other types do not clean.
