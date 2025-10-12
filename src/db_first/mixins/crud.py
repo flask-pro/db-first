@@ -4,6 +4,7 @@ from typing import Optional
 
 from sqlalchemy import delete
 from sqlalchemy import func
+from sqlalchemy import insert
 from sqlalchemy import Select
 from sqlalchemy import select
 from sqlalchemy import update
@@ -42,6 +43,14 @@ class CreateMixin:
         session.add(new_obj)
         session.commit()
         return new_obj
+
+    def bulk_create_object(self, data: list[dict]) -> None:
+        """If this method does not suit you, simply override it in your class."""
+
+        session = self._get_option_from_meta('session')
+        model = self._get_option_from_meta('model')
+
+        session.execute(insert(model), data)
 
 
 class ReadMixin:
@@ -177,6 +186,13 @@ class ReadMixin:
         stmt = select(model).where(model.id == id)
         return session.scalars(stmt).one()
 
+    def bulk_read_object(self, ids: list[Any]) -> list[Result]:
+        session = self._get_option_from_meta('session')
+        model = self._get_option_from_meta('model')
+
+        stmt = select(model).where(model.id.in_(ids))
+        return session.scalars(stmt).all()
+
 
 class UpdateMixin:
     """Update object in database.
@@ -207,6 +223,14 @@ class UpdateMixin:
         obj = session.scalars(stmt).one()
         return obj
 
+    def bulk_update_object(self, data: list[dict]) -> None:
+        """If this method does not suit you, simply override it in your class."""
+
+        session = self._get_option_from_meta('session')
+        model = self._get_option_from_meta('model')
+
+        session.execute(update(model), data)
+
 
 class DeleteMixin:
     """Delete object from database."""
@@ -218,3 +242,11 @@ class DeleteMixin:
         model = self._get_option_from_meta('model')
 
         session.execute(delete(model).where(model.id == id))
+
+    def bulk_delete_object(self, data: list[Any]) -> None:
+        """If this method does not suit you, simply override it in your class."""
+
+        session = self._get_option_from_meta('session')
+        model = self._get_option_from_meta('model')
+
+        session.execute(delete(model).where(model.id.in_(data)))
