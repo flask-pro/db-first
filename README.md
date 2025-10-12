@@ -15,8 +15,11 @@ CRUD tools for working with database via SQLAlchemy.
 ## Features
 
 * CreateMixin, ReadMixin, UpdateMixin, DeleteMixin for CRUD operation for database.
+* Bulk methods for CreateMixin, ReadMixin, UpdateMixin, DeleteMixin.
 * ReadMixin support paginated data from database.
 * StatementMaker class for create query 'per-one-model'.
+* Decorators `Validation` for validation and serialize/deserialize arguments, parameters and
+  return data for function and methods.
 * Marshmallow (https://github.com/marshmallow-code/marshmallow) schemas for serialization input data.
 * Marshmallow schemas for deserialization SQLAlchemy result object to `dict`.
 

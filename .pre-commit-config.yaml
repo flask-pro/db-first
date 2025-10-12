@@ -1,9 +1,13 @@
 repos:
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.20.0
+  rev: v3.21.0
   hooks:
   - id: pyupgrade
     args: [--py39]
+- repo: https://github.com/MarcoGorelli/auto-walrus
+  rev: 0.3.4
+  hooks:
+  - id: auto-walrus
 - repo: https://github.com/dannysepler/rm_unneeded_f_str
   rev: v0.2.0
   hooks:
@@ -43,11 +47,11 @@ repos:
     - --check-protected
     - --ignore-no-params
 - repo: https://github.com/psf/black
-  rev: 25.1.0
+  rev: 25.9.0
   hooks:
   - id: black
 - repo: https://github.com/asottile/reorder_python_imports
-  rev: v3.15.0
+  rev: v3.16.0
   hooks:
   - id: reorder-python-imports
 - repo: https://github.com/pre-commit/pygrep-hooks

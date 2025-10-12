@@ -13,7 +13,7 @@ class Validation:
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(self, **data) -> Any:
+            def wrapper(self, **data) -> Any or dict[Any, Any]:
                 if deserialize:
                     deserialized_data = schema(only=keys).load(data)
                     return func(self, **deserialized_data)
@@ -31,7 +31,7 @@ class Validation:
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(self, *args, **kwargs) -> Any:
+            def wrapper(self, *args, **kwargs) -> Any or dict[Any, Any]:
                 obj = func(self, *args, **kwargs)
 
                 if serialize:

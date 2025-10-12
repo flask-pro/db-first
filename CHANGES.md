@@ -1,3 +1,7 @@
+## Version 4.1.0
+
+* Add bulk methods to `CreateMixin`, `ReadMixin`, `UpdateMixin` and `DeleteMixin` mixins.
+
 ## Version 4.0.0
 
 * Add `Validation` decorators.
@@ -10,7 +14,7 @@
 ## Version 2.1.0
 
 * `PaginateMixin` removed, this functional moved to `ReadMixin`.
-* Add parameter `deserialize` to `CreateMixin`, `ReadMixin` and `UpdateMixine`.
+* Add parameter `deserialize` to `CreateMixin`, `ReadMixin` and `UpdateMixin`.
 * Improved docstrings.
 
 
