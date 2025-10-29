@@ -23,7 +23,7 @@ format: venv
 
 test: venv
 	# Run pytest.
-	./venv/bin/pytest -x --cov-report term-missing:skip-covered --cov=db_first tests/
+	./venv/bin/pytest -x --cov-report term-missing:skip-covered --cov=src/db_first tests/
 
 tox: venv
 	# Testing project via several Python versions.

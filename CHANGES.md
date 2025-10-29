@@ -1,3 +1,8 @@
+## Version 4.2.0
+
+* Add method `.to_dict()` to `ModelMixin`.
+* Add validate UTC timezone for datetime field in `ModelMixine`.
+
 ## Version 4.1.0
 
 * Add bulk methods to `CreateMixin`, `ReadMixin`, `UpdateMixin` and `DeleteMixin` mixins.
