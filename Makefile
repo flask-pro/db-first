@@ -1,5 +1,5 @@
 VENV_DIR = venv
-PYTHON = python3.12
+PYTHON = python3.14
 PIP = $(VENV_DIR)/bin/pip
 PYTHON_VENV = $(VENV_DIR)/bin/python
 TOX = $(VENV_DIR)/bin/tox
