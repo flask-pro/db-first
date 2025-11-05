@@ -4,7 +4,6 @@ from uuid import uuid4
 
 import pytest
 from marshmallow import fields
-from marshmallow import Schema
 from sqlalchemy import Result
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Mapped
@@ -19,10 +18,11 @@ from src.db_first.mixins.crud import CreateMixin
 from src.db_first.mixins.crud import DeleteMixin
 from src.db_first.mixins.crud import ReadMixin
 from src.db_first.mixins.crud import UpdateMixin
+from src.db_first.schemas import BaseSchema
 from tests.conftest import UNIQUE_STRING
 
 
-class TestSchema(Schema):
+class TestSchema(BaseSchema):
     id = fields.UUID()
     first = fields.String()
 

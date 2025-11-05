@@ -32,6 +32,7 @@ tox: venv
 clean:
 	rm -rf dist/
 	rm -rf src/DB_First.egg-info
+	rm -rf venv
 
 build: clean venv
 	$(PYTHON_VENV) -m build

@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from math import ceil
 
 import pytest
@@ -96,8 +97,8 @@ def test_controller__interval_filtration(fx_parent_controller):
         include_metadata=True,
         ids=[item_1.id, item_2.id, item_3.id],
         sort_created_at='asc',
-        start_created_at=item_1.created_at.isoformat(),
-        end_created_at=item_3.created_at.isoformat(),
+        start_created_at=item_1.created_at.replace(tzinfo=timezone.utc).isoformat(),
+        end_created_at=item_3.created_at.replace(tzinfo=timezone.utc).isoformat(),
     )
     assert items_asc['_metadata']['pagination']['page'] == 1
     assert items_asc['_metadata']['pagination']['pages'] == 1
@@ -110,8 +111,8 @@ def test_controller__interval_filtration(fx_parent_controller):
         include_metadata=True,
         ids=[item_1.id, item_2.id, item_3.id],
         sort_created_at='desc',
-        start_created_at=item_1.created_at.isoformat(),
-        end_created_at=item_3.created_at.isoformat(),
+        start_created_at=item_1.created_at.replace(tzinfo=timezone.utc).isoformat(),
+        end_created_at=item_3.created_at.replace(tzinfo=timezone.utc).isoformat(),
     )
     assert items_desc['_metadata']['pagination']['page'] == 1
     assert items_desc['_metadata']['pagination']['pages'] == 1
@@ -204,8 +205,8 @@ def test_controller__statement(fx_db, fx_parents__non_deletion, fx_parent_contro
         ids=ids,
         sort_created_at='desc',
         search_first='name',
-        start_created_at=(datetime.utcnow() - timedelta(minutes=1)).isoformat(),
-        end_created_at=datetime.utcnow().isoformat(),
+        start_created_at=(datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
+        end_created_at=datetime.now(timezone.utc).isoformat(),
     )
     assert items['items']
     assert len(items['items']) == 2

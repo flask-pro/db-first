@@ -24,8 +24,8 @@ description = "CRUD tools for working with database via SQLAlchemy."
 license = {file = "LICENSE"}
 name = "DB-First"
 readme = "README.md"
-requires-python = ">=3.9"
-version = "4.2.0"
+requires-python = ">=3.11"
+version = "4.3.0"
 
 [project.optional-dependencies]
 dev = [
@@ -82,8 +82,6 @@ legacy_tox_ini = """
         py313
         py312
         py311
-        py310
-        py39
         pypy311
     [testenv]
     allowlist_externals = *

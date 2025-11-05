@@ -22,6 +22,7 @@ CRUD tools for working with database via SQLAlchemy.
   return data for function and methods.
 * Marshmallow (https://github.com/marshmallow-code/marshmallow) schemas for serialization input data.
 * Marshmallow schemas for deserialization SQLAlchemy result object to `dict`.
+* Datetime with UTC timezone validation in `BaseSchema`.
 
 ## Installation
 
