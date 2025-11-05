@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 from datetime import timezone
-from typing import Optional
 
 from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped
@@ -13,6 +12,10 @@ def make_uuid4() -> uuid.UUID:
     return uuid.uuid4()
 
 
+def make_datetime_with_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class ModelMixin:
     """Mixin for table model."""
 
@@ -20,10 +23,10 @@ class ModelMixin:
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=make_uuid4, comment='UUID')
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, comment='Date and time created'
+        DateTime(timezone=True), default=make_datetime_with_utc, comment='Date and time created'
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), onupdate=datetime.utcnow, comment='Date and time updated'
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=make_datetime_with_utc, comment='Date and time updated'
     )
 
     @staticmethod

@@ -1,6 +1,5 @@
 from math import ceil
 from typing import Any
-from typing import Optional
 
 from sqlalchemy import delete
 from sqlalchemy import func
@@ -107,10 +106,10 @@ class ReadMixin:
 
     def _paginate(
         self,
-        statement: Optional[Select],
+        statement: Select | None,
         page: int = 1,
-        per_page: Optional[int] = 20,
-        max_per_page: Optional[int] = 100,
+        per_page: int | None = 20,
+        max_per_page: int | None = 100,
         include_metadata: bool = False,
     ) -> dict:
         session: Session = self._get_option_from_meta('session')
@@ -140,9 +139,9 @@ class ReadMixin:
     def base_paginate(
         self,
         page: int = 1,
-        per_page: Optional[int] = None,
-        max_per_page: Optional[int] = None,
-        statement: Optional[Select] = None,
+        per_page: int | None = None,
+        max_per_page: int | None = None,
+        statement: Select | None = None,
         include_metadata: bool = False,
         **kwargs,
     ) -> Result or dict:

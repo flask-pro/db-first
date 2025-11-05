@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from marshmallow import fields
 from marshmallow import validate
 
@@ -24,7 +26,7 @@ class ParentSchema(IdSchema):
     first = fields.String(required=True)
     second = fields.String(allow_none=False)
     father_id = fields.UUID()
-    created_at = fields.DateTime()
+    created_at = fields.AwareDateTime(default_timezone=timezone.utc)
     father = fields.Nested(FatherSchema)
     children = fields.Nested(ChildSchema, many=True)
 

@@ -1,3 +1,8 @@
+## Version 4.3.0
+
+* Add validate UTC timezone for datetime fields in `BaseSchema`.
+* Remove Python version 3.9 and 3.10.
+
 ## Version 4.2.0
 
 * Add method `.to_dict()` to `ModelMixin`.

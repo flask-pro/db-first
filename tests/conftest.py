@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import pytest
@@ -46,8 +45,8 @@ def fx_db(fx_db_connection):
         __tablename__ = 'parents'
 
         first: Mapped[str] = mapped_column()
-        second: Mapped[Optional[str]] = mapped_column()
-        father_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey('fathers.id'))
+        second: Mapped[str | None] = mapped_column()
+        father_id: Mapped[UUID | None] = mapped_column(ForeignKey('fathers.id'))
 
         father = relationship(
             'Fathers', backref='parents', cascade='all, delete-orphan', single_parent=True
@@ -61,8 +60,8 @@ def fx_db(fx_db_connection):
         __tablename__ = 'children'
 
         first: Mapped[str] = mapped_column()
-        second: Mapped[Optional[str]] = mapped_column()
-        parent_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey('parents.id'))
+        second: Mapped[str | None] = mapped_column()
+        parent_id: Mapped[UUID | None] = mapped_column(ForeignKey('parents.id'))
 
         parent = relationship(
             'Parents', backref='children', cascade='all, delete-orphan', single_parent=True
@@ -72,7 +71,7 @@ def fx_db(fx_db_connection):
         __tablename__ = 'fathers'
 
         first: Mapped[str] = mapped_column()
-        second: Mapped[Optional[str]] = mapped_column()
+        second: Mapped[str | None] = mapped_column()
 
     Base.metadata.create_all(engine)
 

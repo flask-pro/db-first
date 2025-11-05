@@ -1,5 +1,9 @@
+from datetime import datetime
+from datetime import timezone
+
 from marshmallow import post_dump
 from marshmallow import Schema
+from marshmallow import validates_schema
 
 
 class BaseSchema(Schema):
@@ -40,3 +44,17 @@ class BaseSchema(Schema):
 
         else:
             return data
+
+    @staticmethod
+    def validate_utc_timezone(key: str, value: datetime or None) -> None:
+        time_zone = getattr(value, 'tzinfo', None)
+        if time_zone != timezone.utc:
+            raise ValueError(
+                f'Field <{key}> must be datetime with UTC timezone, but timezone: <{time_zone}>'
+            )
+
+    @validates_schema
+    def validate_datetime_fields(self, data: dict, **kwargs) -> None:
+        for k, v in data.items():
+            if isinstance(v, datetime):
+                self.validate_utc_timezone(k, v)

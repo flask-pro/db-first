@@ -1,5 +1,4 @@
 from typing import Any
-from typing import Optional
 
 from .exc import MetaNotFound
 from .exc import OptionNotFound
@@ -7,7 +6,7 @@ from .exc import OptionNotFound
 
 class BaseCRUD:
     @classmethod
-    def _get_option_from_meta(cls, name: str, default: Optional[Any] = ...) -> Any:
+    def _get_option_from_meta(cls, name: str, default: Any | None = ...) -> Any:
         try:
             meta = cls.Meta
         except AttributeError:

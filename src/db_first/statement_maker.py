@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 from typing import Any
-from typing import Optional
 
 from sqlalchemy import or_
 from sqlalchemy import Select
@@ -32,7 +31,7 @@ class StatementMaker:
         self,
         model: DeclarativeBase,
         data: dict[str, Any],
-        statement: Optional[Select] = None,
+        statement: Select | None = None,
         filterable_fields: Iterable = (),
         interval_filterable_fields: Iterable = (),
         searchable_fields: Iterable = (),
