@@ -1,31 +1,158 @@
-from sqlalchemy import or_
 from sqlalchemy import select
 
 from src.db_first.statement_maker import StatementMaker
+from tests.conftest import UNIQUE_STRING
 
 
 def test_statement_maker__init(fx_db):
     _, Parents, _, _ = fx_db
 
-    stmt = StatementMaker(Parents, data={})
-    assert stmt.stmt.compile().string == select(Parents).compile().string
+    stmt = StatementMaker(Parents, limit=0, offset=1).make_stmt()
+    assert stmt.compile().string == select(Parents).limit(1).offset(1).compile().string
 
 
-def test_statement_maker__filter(fx_db):
+def test_statement_maker__filter__lt(fx_db, fx_make_stmt, fx_parent_action__create):
     _, Parents, _, _ = fx_db
 
-    init_stmt = select(Parents)
-    statement_maker = StatementMaker(
+    parent_1 = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+
+    statement_maker = fx_make_stmt(
         Parents,
-        data={'first': 'someone', 'second': ['someone']},
-        statement=init_stmt,
-        filterable_fields=['first', 'second'],
+        where={'and': [{'col': 'created_at', 'opr': 'lt', 'value': parent_1.created_at}]},
     )
-    compiled_stmt = statement_maker.stmt.compile().string
+    compiled_stmt = statement_maker.compile().string
 
     compiled_control_stmt = (
-        init_stmt.where(Parents.first == 'someone')
-        .where(Parents.second.in_(['someone']))
+        select(Parents).where(Parents.created_at < parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt == compiled_control_stmt
+
+
+def test_statement_maker__filter__le(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'created_at', 'opr': 'le', 'value': parent_1.created_at}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.created_at <= parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter__eq(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'id', 'opr': 'eq', 'value': parent_1.id}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.id == parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter__ne(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'id', 'opr': 'ne', 'value': parent_1.id}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.id != parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter__ge(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'created_at', 'opr': 'ge', 'value': parent_1.created_at}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.created_at >= parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter__gt(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'created_at', 'opr': 'gt', 'value': parent_1.created_at}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.created_at > parent_1.id).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter_in(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'id', 'opr': 'in', 'value': [parent_1.id]}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents).where(Parents.id.in_([parent_1.id])).limit(0).offset(1).compile().string
+    )
+
+    assert compiled_stmt in compiled_control_stmt
+
+
+def test_statement_maker__filter_contains(fx_db, fx_make_stmt, fx_parents__non_deletion):
+    _, Parents, _, _ = fx_db
+
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
+        Parents,
+        where={'and': [{'col': 'id', 'opr': 'ilike', 'value': parent_1.first[:4]}]},
+    )
+    compiled_stmt = statement_maker.compile().string
+
+    compiled_control_stmt = (
+        select(Parents)
+        .where(Parents.id.ilike(f'%{parent_1.first[:4]}%'))
+        .limit(0)
+        .offset(1)
         .compile()
         .string
     )
@@ -33,59 +160,42 @@ def test_statement_maker__filter(fx_db):
     assert compiled_stmt in compiled_control_stmt
 
 
-def test_statement_maker__interval_filter(fx_db):
+def test_statement_maker__filter__le_ge(fx_db, fx_make_stmt, fx_parents__non_deletion):
     _, Parents, _, _ = fx_db
 
-    stmt = StatementMaker(
+    parent_1 = fx_parents__non_deletion()
+
+    statement_maker = fx_make_stmt(
         Parents,
-        data={'start_first': 'start_someone', 'end_first': 'end_someone'},
-        interval_filterable_fields=['first'],
-    ).make_statement()
-    compiled_stmt = stmt.compile().string
+        where={
+            'and': [
+                {'col': 'created_at', 'opr': 'le', 'value': parent_1.created_at},
+                {'col': 'created_at', 'opr': 'ge', 'value': parent_1.created_at},
+            ]
+        },
+    )
+    compiled_stmt = statement_maker.compile().string
 
     compiled_control_stmt = (
         select(Parents)
-        .where(Parents.first >= 'end_someone')
-        .where(Parents.first < 'start_someone')
+        .where(Parents.created_at <= parent_1.id, Parents.created_at >= parent_1.id)
+        .limit(0)
+        .offset(1)
         .compile()
         .string
     )
 
-    assert compiled_stmt == compiled_control_stmt
+    assert compiled_stmt in compiled_control_stmt
 
 
-def test_statement_maker__search_filter(fx_db):
+def test_statement_maker__sort(fx_db, fx_make_stmt):
     _, Parents, _, _ = fx_db
 
-    stmt = StatementMaker(
-        Parents,
-        data={'search_first': 'someone', 'search_second': 'someone'},
-        searchable_fields=['first', 'second'],
-    ).make_statement()
-    compiled_stmt = stmt.compile().string
+    statement_maker = fx_make_stmt(Parents, order_by=[{'col': 'id', 'opr': 'asc'}])
+    compiled_stmt = statement_maker.compile().string
 
     compiled_control_stmt = (
-        select(Parents)
-        .where(or_(Parents.first.ilike('%someone%'), Parents.second.ilike('%someone%')))
-        .compile()
-        .string
+        select(Parents).order_by(Parents.id.asc()).limit(0).offset(1).compile().string
     )
 
-    assert compiled_stmt == compiled_control_stmt
-
-
-def test_statement_maker__sort(fx_db):
-    _, Parents, _, _ = fx_db
-
-    stmt = StatementMaker(
-        Parents,
-        data={'sort_first': 'asc', 'sort_second': 'desc'},
-        sortable_fields=['first', 'second'],
-    ).make_statement()
-    compiled_stmt = stmt.compile().string
-
-    compiled_control_stmt = (
-        select(Parents).order_by(Parents.first).order_by(Parents.second.desc()).compile().string
-    )
-
-    assert compiled_stmt == compiled_control_stmt
+    assert compiled_stmt in compiled_control_stmt

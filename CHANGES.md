@@ -1,3 +1,11 @@
+## Version 5.0.0
+
+* Complete redesign of the module architecture and the proposed approach to working with the database.
+* Adding `Action` for independence from web frameworks.
+* Add an access layer to work with the database - DBAL.
+* Refactoring the method to obtain paginated results.
+* Remove Python version 3.11.
+
 ## Version 4.3.0
 
 * Add validate UTC timezone for datetime fields in `BaseSchema`.

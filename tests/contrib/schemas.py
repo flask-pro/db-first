@@ -1,9 +1,9 @@
 from datetime import timezone
 
 from marshmallow import fields
-from marshmallow import validate
 
 from src.db_first.schemas import BaseSchema
+from src.db_first.schemas import PaginateResultSchema
 
 
 class IdSchema(BaseSchema):
@@ -31,34 +31,5 @@ class ParentSchema(IdSchema):
     children = fields.Nested(ChildSchema, many=True)
 
 
-class ParentSchemaParametersOfPaginate(BaseSchema):
-    id = fields.UUID()
-    ids = fields.List(fields.UUID())
-    page = fields.Integer(validate=validate.Range(min=0))
-    max_per_page = fields.Integer(validate=validate.Range(min=0))
-    per_page = fields.Integer(validate=validate.Range(min=0))
-    sort_created_at = fields.String(validate=validate.OneOf(['asc', 'desc']))
-    search_first = fields.String()
-    first = fields.String()
-    start_created_at = fields.DateTime()
-    end_created_at = fields.DateTime()
-    include_metadata = fields.Boolean(validate=validate.OneOf([True]))
-    fields = fields.List(fields.String())
-
-
-class Paginate(BaseSchema):
-    page = fields.Integer(allow_none=False)
-    per_page = fields.Integer(allow_none=False)
-    pages = fields.Integer(allow_none=False)
-    total = fields.Integer(allow_none=False)
-
-
-class MetadataSchema(BaseSchema):
-    pagination = fields.Nested(Paginate)
-
-
-class ParentSchemaOfPaginate(BaseSchema):
-    __skipped_keys__ = ('items',)
-
-    _metadata = fields.Nested(MetadataSchema)
-    items = fields.Nested(ParentSchema, many=True)
+class ParentPaginationSchema(PaginateResultSchema):
+    items = fields.Nested(ParentSchema, required=True, many=True)

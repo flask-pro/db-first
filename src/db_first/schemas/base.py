@@ -2,13 +2,17 @@ from datetime import datetime
 from datetime import timezone
 
 from marshmallow import post_dump
+from marshmallow import RAISE
 from marshmallow import Schema
 from marshmallow import validates_schema
 
 
 class BaseSchema(Schema):
-    __empty_values__ = ('', None, ..., [], {}, (), set())
-    __skipped_keys__ = ()
+    _empty_values = ('', None, ..., [], {}, (), set())
+    _skipped_keys = ()
+
+    class Meta:
+        unknown = RAISE
 
     @post_dump()
     def _delete_keys_with_empty_value(self, data, many=False) -> dict or list:
@@ -29,7 +33,7 @@ class BaseSchema(Schema):
 
             cleaned_dict = {}
             for k, v in pre_cleaned_dict.items():
-                if k not in self.__skipped_keys__ and v in self.__empty_values__:
+                if k not in self._skipped_keys and v in self._empty_values:
                     continue
                 else:
                     cleaned_dict[k] = v
@@ -40,7 +44,7 @@ class BaseSchema(Schema):
             pre_cleaned_list = [
                 self._delete_keys_with_empty_value(item, many=many) for item in data
             ]
-            return [item for item in pre_cleaned_list if item not in self.__empty_values__]
+            return [item for item in pre_cleaned_list if item not in self._empty_values]
 
         else:
             return data

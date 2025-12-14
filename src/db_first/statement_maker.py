@@ -1,119 +1,150 @@
-from collections.abc import Iterable
 from typing import Any
+from typing import Literal
 
+from marshmallow import fields
+from marshmallow import validate
+from marshmallow import validates_schema
+from sqlalchemy import and_
 from sqlalchemy import or_
 from sqlalchemy import Select
 from sqlalchemy import select
-from sqlalchemy.orm import DeclarativeBase
+
+from .schemas import BaseSchema
+
+
+class JoinSchema(BaseSchema):
+    table = fields.String(required=True, validate=[validate.Length(min=1)])
+
+
+class FilterSchema(BaseSchema):
+    col = fields.String(required=True, validate=[validate.Length(min=1)])
+    opr = fields.String(
+        required=True,
+        validate=[validate.OneOf(['lt', 'le', 'eq', 'ne', 'ge', 'gt', 'in', 'ilike'])],
+    )
+    value = fields.Raw(required=True)
+
+    @validates_schema
+    def validate_datetime_fields(self, data: dict, **kwargs) -> None:
+        pass
+
+
+class OrderBySchema(BaseSchema):
+    col = fields.String(required=True, validate=[validate.Length(min=1)])
+    opr = fields.String(required=True, validate=[validate.OneOf(['asc', 'desc'])])
+
+
+class WhereSchema(BaseSchema):
+    and_ = fields.List(fields.Nested(FilterSchema), data_key='and')
+
+
+class SQLJSONSchema(BaseSchema):
+    where = fields.Nested(WhereSchema)
+    order_by = fields.Nested(OrderBySchema, many=True)
+    limit = fields.Integer(validate=[validate.Range(min=0)])
+    offset = fields.Integer(validate=[validate.Range(min=0)])
 
 
 class StatementMaker:
     """The class builds a SQL statement as a SQLAlchemy object.
 
-    The class works only with one table, passed during initialization in the `model` argument.
-    If you need to specify parameters for other query tables, then you should pass the parameter
-    `statement` containing a pre-prepared request, or write the request directly without using
-    `QueryMaker`.
+    The class works only with one table, is set during initialization in the `model` argument.
 
     The request is executed outside of this class
     """
 
-    START_PERIOD_PREFIX = 'start_'
-    END_PERIOD_PREFIX = 'end_'
-
-    SEARCH_PREFIX = 'search_'
-
-    SORT_PREFIX = 'sort_'
-    ASC_SORTING_VALUE = 'asc'
-    DESC_SORTING_VALUE = 'desc'
+    _map_conjunction = {'and': and_, 'or': or_}
 
     def __init__(
         self,
-        model: DeclarativeBase,
-        data: dict[str, Any],
-        statement: Select | None = None,
-        filterable_fields: Iterable = (),
-        interval_filterable_fields: Iterable = (),
-        searchable_fields: Iterable = (),
-        sortable_fields: Iterable = (),
-    ) -> None:
+        model,
+        where: dict['str':Any] | None = None,
+        order_by: dict['str':Any] | None = None,
+        limit: int = 1000,
+        offset: int = 0,
+    ):
         self._model = model
-        self._data = data
+        self._select = select
+        self._where = where
+        self._order_by = order_by
+        self._limit = limit
+        self._offset = offset
 
-        if statement is None:
-            self.stmt = select(model)
+        self._validate()
+
+    def _validate(self):
+        data = {'limit': self._limit, 'offset': self._offset}
+
+        if self._where is not None:
+            data['where'] = self._where
+
+        if self._order_by is not None:
+            data['order_by'] = self._order_by
+
+        SQLJSONSchema().load(data)
+
+    def _make_expr(self, col: str, opr: Literal['eq', 'in'], value: Any) -> bool | Any:
+        if opr == 'lt':
+            return getattr(self._model, col) < value
+        if opr == 'le':
+            return getattr(self._model, col) <= value
+        elif opr == 'eq':
+            return getattr(self._model, col) == value
+        elif opr == 'ne':
+            return getattr(self._model, col) != value
+        elif opr == 'ge':
+            return getattr(self._model, col) >= value
+        elif opr == 'gt':
+            return getattr(self._model, col) > value
+        elif opr == 'in':
+            return getattr(self._model, col).in_(value)
+        elif opr == 'ilike':
+            return getattr(self._model, col).ilike(f'%{value}%')
         else:
-            self.stmt = statement
+            raise NotImplementedError(f'Operator <{opr}> not implemented.')
 
-        self._filterable_fields = filterable_fields
-        self._interval_filterable_fields = interval_filterable_fields
-        self._searchable_fields = searchable_fields
-        self._sortable_fields = sortable_fields
+    def _make_where_expression(
+        self,
+        expressions: (
+            dict[Literal['and', 'or'], list[dict[Any, Any]]]
+            | dict[Literal['col', 'opr', 'value'], Any]
+        ),
+    ):
+        if 'and' in expressions:
+            and_exprs = expressions['and']
+            return self._map_conjunction['and'](
+                *[self._make_where_expression(expr) for expr in and_exprs]
+            )
 
-    def _add_filtration(self) -> None:
-        """Adding filtering conditions to the statement."""
+        if 'or' in expressions:
+            raise NotImplementedError('or')
 
-        for field in self._filterable_fields:
-            if field not in self._data:
-                continue
+        return self._make_expr(**expressions)
 
-            if isinstance(self._data[field], list):
-                self.stmt = self.stmt.where(getattr(self._model, field).in_(self._data[field]))
+    def make_where(self, where_: dict[str, list[dict[Any, Any]]]) -> Select:
+        if len(where_) != 1:
+            raise NotImplementedError('Only one key "and" or "or" to top level.')
+
+        return self._make_where_expression(where_)
+
+    def make_order_by(self, order_by_: list[dict[str, Any]]) -> list[Any]:
+        order_by_expressions = []
+        for order in order_by_:
+            if order['opr'] == 'asc':
+                order_by_expressions.append(getattr(self._model, order['col']).asc())
             else:
-                self.stmt = self.stmt.where(getattr(self._model, field) == self._data[field])
+                order_by_expressions.append(getattr(self._model, order['col']).desc())
 
-    def _add_interval_filtration(self) -> None:
-        """Adding filtering conditions by interval to the statement."""
+        return order_by_expressions
 
-        for field in self._interval_filterable_fields:
-            start_field_name = f'{self.START_PERIOD_PREFIX}{field}'
-            if start_field_name in self._data:
-                self.stmt = self.stmt.where(
-                    getattr(self._model, field) >= self._data[start_field_name]
-                )
+    def make_stmt(self) -> Select:
+        stmt = select(self._model)
 
-            end_field_name = f'{self.END_PERIOD_PREFIX}{field}'
-            if end_field_name in self._data:
-                self.stmt = self.stmt.where(
-                    getattr(self._model, field) < self._data[end_field_name]
-                )
+        if self._where:
+            stmt = stmt.where(self.make_where(self._where))
 
-    def _add_searching(self) -> None:
-        """Adding search terms to a statement."""
+        if self._order_by:
+            stmt = stmt.order_by(*self.make_order_by(self._order_by))
 
-        searching = []
-        for field in self._searchable_fields:
-            search_field_name = f'{self.SEARCH_PREFIX}{field}'
-            if search_field_name in self._data:
-                searching.append(
-                    getattr(self._model, field).ilike(f'%{self._data[search_field_name]}%')
-                )
-        if searching:
-            self.stmt = self.stmt.where(or_(*searching))
-
-    def _add_sorting(self) -> None:
-        """Adding sorting conditions to a statement."""
-
-        for field in self._sortable_fields:
-            sort_field_name = f'{self.SORT_PREFIX}{field}'
-            if sort_field_name not in self._data:
-                continue
-
-            if self._data[sort_field_name] == self.ASC_SORTING_VALUE:
-                self.stmt = self.stmt.order_by(getattr(self._model, field))
-            elif self._data[sort_field_name] == self.DESC_SORTING_VALUE:
-                self.stmt = self.stmt.order_by(getattr(self._model, field).desc())
-            else:
-                raise ValueError(
-                    f'Field <{sort_field_name}> contain value <{self._data[sort_field_name]}>.'
-                    f' But must contain value <{self.ASC_SORTING_VALUE}>'
-                    f' or <{self.DESC_SORTING_VALUE}>.'
-                )
-
-    def make_statement(self) -> Select:
-        self._add_filtration()
-        self._add_interval_filtration()
-        self._add_searching()
-        self._add_sorting()
-
-        return self.stmt
+        stmt = stmt.limit(self._limit).offset(self._offset)
+        return stmt

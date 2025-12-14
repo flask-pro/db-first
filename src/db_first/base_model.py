@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from datetime import timezone
 
+from marshmallow import Schema
 from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -19,11 +20,16 @@ def make_datetime_with_utc() -> datetime:
 class ModelMixin:
     """Mixin for table model."""
 
-    EMPTY_VALUES: tuple[None, list, dict, tuple] = (None, [], {}, ())
+    _to_dict_schemas: Schema
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=make_uuid4, comment='UUID')
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, nullable=False, default=make_uuid4, comment='UUID'
+    )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=make_datetime_with_utc, comment='Date and time created'
+        DateTime(timezone=True),
+        nullable=False,
+        default=make_datetime_with_utc,
+        comment='Date and time created',
     )
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), onupdate=make_datetime_with_utc, comment='Date and time updated'
@@ -43,32 +49,3 @@ class ModelMixin:
     @validates('created_at', 'updated_at')
     def validate_timezone(self, key, value) -> datetime:
         return self.validate_utc_timezone(key, value)
-
-    def to_dict(self, fields: dict[str, dict or list or Ellipsis]):
-        data = {}
-        for field, value in fields.items():
-            value_from_db = None
-
-            if value is Ellipsis:
-                value_from_db = getattr(self, field)
-
-            elif isinstance(value, dict):
-                obj = getattr(self, field)
-                if obj:
-                    value_from_db = obj.to_dict(value)
-
-            elif isinstance(value, list):
-                value_from_db = []
-                for obj in getattr(self, field):
-                    for item in value:
-                        dictable_value_from_db = obj.to_dict(item)
-                        if dictable_value_from_db not in self.EMPTY_VALUES:
-                            value_from_db.append(dictable_value_from_db)
-
-            else:
-                value_from_db = self.to_dict(value)
-
-            if value_from_db not in self.EMPTY_VALUES:
-                data[field] = value_from_db
-
-        return data
