@@ -1,6 +1,7 @@
 ## Version 5.1.0
 
 * Fix absolute imports.
+* Add filtration methods to dbal.
 
 ## Version 5.0.0
 
