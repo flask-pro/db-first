@@ -63,11 +63,30 @@ class SqlaDBAL[M](PageMixin):
             raise DBALObjectNotFoundException(repr(e))
 
     def bulk_read(self, ids: list[Any]) -> Sequence[M]:
-        stmt = select(self._model).where(self._model.id.in_(ids))
-        return self._session.scalars(stmt).all()
+        return self.read_filtered_list(id=ids)
 
     def read_all(self) -> Sequence[M]:
         stmt = select(self._model)
+        return self._session.scalars(stmt).all()
+
+    def read_filtered(self, **kwargs) -> M:
+        filters = [getattr(self._model, k) == v for k, v in kwargs.items()]
+        stmt = select(self._model).where(*filters)
+
+        try:
+            return self._session.scalars(stmt).one()
+        except NoResultFound as e:
+            raise DBALObjectNotFoundException(repr(e))
+
+    def read_filtered_list(self, **kwargs) -> Sequence[M]:
+        filters = []
+        for k, v in kwargs.items():
+            if isinstance(v, list):
+                filters.append(getattr(self._model, k).in_(v))
+            else:
+                filters.append(getattr(self._model, k) == v)
+
+        stmt = select(self._model).where(*filters)
         return self._session.scalars(stmt).all()
 
     def update(self, id: Any, **data) -> M:
