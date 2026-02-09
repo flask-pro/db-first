@@ -1,9 +1,8 @@
 from datetime import timezone
 
+from db_first.schemas import BaseSchema
+from db_first.schemas import PaginateResultSchema
 from marshmallow import fields
-
-from src.db_first.schemas import BaseSchema
-from src.db_first.schemas import PaginateResultSchema
 
 
 class IdSchema(BaseSchema):

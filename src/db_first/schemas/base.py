@@ -20,10 +20,10 @@ class BaseSchema(Schema):
 
         Cleaning occurs for objects of the list and dict types, other types do not clean.
 
-        :param data: an object for cleaning.
+        :param data: An object for cleaning.
         :param many: Should be set to `True` if ``obj`` is a collection so that the object will
          be serialized to a list.
-        :return: cleaned object.
+        :return: Cleaned object.
         """
 
         if isinstance(data, dict):

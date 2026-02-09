@@ -1,4 +1,4 @@
-from ..exc import DBFirstError
+from db_first.exc import DBFirstError
 
 
 class DBALException(DBFirstError):

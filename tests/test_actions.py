@@ -1,13 +1,13 @@
 from copy import deepcopy
 
+from db_first import ModelMixin
+from db_first.actions import BaseWebAction
+from db_first.dbal import SqlaDBAL
+from db_first.schemas import BaseSchema
 from marshmallow import fields
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
-from src.db_first import ModelMixin
-from src.db_first.actions import BaseWebAction
-from src.db_first.dbal import SqlaDBAL
-from src.db_first.schemas import BaseSchema
 from tests.conftest import UNIQUE_STRING
 
 

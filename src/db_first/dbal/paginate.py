@@ -2,9 +2,8 @@ from math import ceil
 from typing import Any
 
 import sqlalchemy as sa
+from db_first.statement_maker import StatementMaker
 from sqlalchemy import func
-
-from ..statement_maker import StatementMaker
 
 
 class PageMixin:

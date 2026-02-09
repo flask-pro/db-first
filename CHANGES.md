@@ -1,3 +1,7 @@
+## Version 5.1.0
+
+* Fix absolute imports.
+
 ## Version 5.0.0
 
 * Complete redesign of the module architecture and the proposed approach to working with the database.

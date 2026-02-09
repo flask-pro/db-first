@@ -1,6 +1,6 @@
 import pytest
+from db_first.dbal.exceptions import DBALObjectNotFoundException
 
-from src.db_first.dbal.exceptions import DBALObjectNotFoundException
 from tests.conftest import UNIQUE_STRING
 
 
