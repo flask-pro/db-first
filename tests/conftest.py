@@ -2,6 +2,12 @@ from typing import Any
 from uuid import UUID
 
 import pytest
+from db_first import ModelMixin
+from db_first.actions import BaseAction
+from db_first.actions import BaseWebAction
+from db_first.dbal import SqlaDBAL
+from db_first.schemas import PaginateActionSchema
+from db_first.statement_maker import StatementMaker
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy import Select
@@ -13,17 +19,10 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 
-from .contrib.schemas import ChildSchema
-from .contrib.schemas import FatherSchema
-from .contrib.schemas import ParentPaginationSchema
-from .contrib.schemas import ParentSchema
-from src.db_first import ModelMixin
-from src.db_first.actions import BaseAction
-from src.db_first.actions import BaseWebAction
-from src.db_first.dbal import SqlaDBAL
-from src.db_first.schemas import PaginateActionSchema
-from src.db_first.statement_maker import StatementMaker
-
+from tests.contrib.schemas import ChildSchema
+from tests.contrib.schemas import FatherSchema
+from tests.contrib.schemas import ParentPaginationSchema
+from tests.contrib.schemas import ParentSchema
 
 UNIQUE_STRING = (f'name_{number}' for number in range(1_000))
 

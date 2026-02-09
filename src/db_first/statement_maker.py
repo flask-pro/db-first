@@ -1,6 +1,7 @@
 from typing import Any
 from typing import Literal
 
+from db_first.schemas import BaseSchema
 from marshmallow import fields
 from marshmallow import validate
 from marshmallow import validates_schema
@@ -8,8 +9,6 @@ from sqlalchemy import and_
 from sqlalchemy import or_
 from sqlalchemy import Select
 from sqlalchemy import select
-
-from .schemas import BaseSchema
 
 
 class JoinSchema(BaseSchema):

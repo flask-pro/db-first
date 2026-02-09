@@ -1,6 +1,6 @@
+from db_first.statement_maker import StatementMaker
 from sqlalchemy import select
 
-from src.db_first.statement_maker import StatementMaker
 from tests.conftest import UNIQUE_STRING
 
 

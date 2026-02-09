@@ -1,10 +1,10 @@
 from uuid import uuid4
 
 import pytest
+from db_first.dbal.exceptions import DBALCreateException
+from db_first.dbal.exceptions import DBALObjectNotFoundException
+from db_first.dbal.exceptions import DBALUpdateException
 
-from src.db_first.dbal.exceptions import DBALCreateException
-from src.db_first.dbal.exceptions import DBALObjectNotFoundException
-from src.db_first.dbal.exceptions import DBALUpdateException
 from tests.conftest import UNIQUE_STRING
 
 wrong_data = [

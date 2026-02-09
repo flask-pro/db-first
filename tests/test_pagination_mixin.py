@@ -5,7 +5,7 @@ from uuid import UUID
 import marshmallow
 import pytest
 
-from .conftest import UNIQUE_STRING
+from tests.conftest import UNIQUE_STRING
 
 
 def test_controller__pagination(fx_parent_action__create, fx_parent_action__paginate):

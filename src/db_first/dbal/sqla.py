@@ -1,6 +1,10 @@
 from typing import Any
 from typing import get_args
 
+from db_first.dbal.exceptions import DBALCreateException
+from db_first.dbal.exceptions import DBALObjectNotFoundException
+from db_first.dbal.exceptions import DBALUpdateException
+from db_first.dbal.paginate import PageMixin
 from sqlalchemy import delete
 from sqlalchemy import insert
 from sqlalchemy import Result
@@ -13,11 +17,6 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
-
-from .exceptions import DBALCreateException
-from .exceptions import DBALObjectNotFoundException
-from .exceptions import DBALUpdateException
-from .paginate import PageMixin
 
 
 class SqlaDBAL[M](PageMixin):
@@ -64,11 +63,30 @@ class SqlaDBAL[M](PageMixin):
             raise DBALObjectNotFoundException(repr(e))
 
     def bulk_read(self, ids: list[Any]) -> Sequence[M]:
-        stmt = select(self._model).where(self._model.id.in_(ids))
-        return self._session.scalars(stmt).all()
+        return self.read_filtered_list(id=ids)
 
     def read_all(self) -> Sequence[M]:
         stmt = select(self._model)
+        return self._session.scalars(stmt).all()
+
+    def read_filtered(self, **kwargs) -> M:
+        filters = [getattr(self._model, k) == v for k, v in kwargs.items()]
+        stmt = select(self._model).where(*filters)
+
+        try:
+            return self._session.scalars(stmt).one()
+        except NoResultFound as e:
+            raise DBALObjectNotFoundException(repr(e))
+
+    def read_filtered_list(self, **kwargs) -> Sequence[M]:
+        filters = []
+        for k, v in kwargs.items():
+            if isinstance(v, list):
+                filters.append(getattr(self._model, k).in_(v))
+            else:
+                filters.append(getattr(self._model, k) == v)
+
+        stmt = select(self._model).where(*filters)
         return self._session.scalars(stmt).all()
 
     def update(self, id: Any, **data) -> M:

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any
 
-from . import BaseAction
+from db_first.actions import BaseAction
 
 
 class BaseWebAction(BaseAction):

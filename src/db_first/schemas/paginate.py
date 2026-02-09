@@ -1,12 +1,11 @@
 from typing import Any
 
+from db_first.schemas import BaseSchema
 from marshmallow import fields
 from marshmallow import INCLUDE
 from marshmallow import pre_load
 from marshmallow import validate
 from marshmallow import ValidationError
-
-from ..schemas import BaseSchema
 
 
 class PaginateActionSchema(BaseSchema):
