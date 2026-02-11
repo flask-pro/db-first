@@ -25,7 +25,7 @@ license = {file = "LICENSE"}
 name = "DB-First"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "5.1.0"
+version = "5.1.1"
 
 [project.optional-dependencies]
 dev = [

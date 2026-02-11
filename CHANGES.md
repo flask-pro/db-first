@@ -1,3 +1,7 @@
+## Version 5.1.1
+
+* Fix delete methods to DBAL.
+
 ## Version 5.1.0
 
 * Fix absolute imports.
