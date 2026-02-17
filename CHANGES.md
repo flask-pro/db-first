@@ -1,3 +1,7 @@
+## Version 5.1.2
+
+* Fix `BaseAction` and `BaseWebAction`.
+
 ## Version 5.1.1
 
 * Fix delete methods to DBAL.

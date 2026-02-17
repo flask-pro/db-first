@@ -37,7 +37,7 @@ class BaseWebAction(BaseAction):
         :raises: ActionRunException
         """
         self.permit()
-        self.validate()
+        self.validated_data = self.validate()
         self.result = self.action()
         self.serialized_result = self.serialization()
         return self.serialized_result

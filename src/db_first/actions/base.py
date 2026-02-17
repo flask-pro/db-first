@@ -10,6 +10,7 @@ class BaseAction(ABC):
 
     _session: Session
     _data: dict[str, Any]
+    validated_data: dict[str, Any]
     result: dict[str, Any]
 
     def __init__(self, session: Session, data: dict[str, Any]):
@@ -23,7 +24,7 @@ class BaseAction(ABC):
         self._data = data
 
     @abstractmethod
-    def validate(self) -> None:
+    def validate(self) -> Any:
         """Validate called by `self.run()` to validate data.
 
         Will raise exception if validation fails.
@@ -49,6 +50,6 @@ class BaseAction(ABC):
 
         :raises: ActionRunException
         """
-        self.validate()
+        self.validated_data = self.validate()
         self.result = self.action()
         return self.result
