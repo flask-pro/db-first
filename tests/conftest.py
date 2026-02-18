@@ -100,7 +100,7 @@ def fx_parent_action__paginate(fx_db, fx_parent_dbal):
             def validate(self) -> None:
                 PaginateActionSchema().load(self._data)
 
-            def action(self) -> None:
+            def action(self) -> dict[str, Any]:
                 params = {k: v for k, v in self._data.items() if k not in ['fields']}
                 result = fx_parent_dbal(session_db).paginate(**params)
                 return result

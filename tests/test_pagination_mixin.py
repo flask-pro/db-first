@@ -205,3 +205,15 @@ def test_controller__fields_for_relations(
     assert items['items'][0]['children'] == [
         {'id': str(new_child.id), 'parent_id': str(new_parent.id)}
     ]
+
+
+def test_controller__pagination__per_page(fx_parent_action__create, fx_parent_action__paginate):
+    _ = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run().id for _ in range(3)]
+
+    data = {'page': 0, 'per_page': 0, 'include_metadata': 'enable'}
+    items = fx_parent_action__paginate(data).run()
+
+    assert items['items']
+    assert items['_metadata']['pagination']['page'] == 0
+    assert items['_metadata']['pagination']['per_page'] == 1000
+    assert items['_metadata']['pagination']['pages'] == 1
