@@ -1,3 +1,7 @@
+## Version 5.1.3
+
+* Fix `paginate` method from `PageMixin`.
+
 ## Version 5.1.2
 
 * Fix `BaseAction` and `BaseWebAction`.

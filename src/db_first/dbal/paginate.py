@@ -62,11 +62,18 @@ class PageMixin:
     def paginate(
         self,
         ids: list[str] | None = None,
-        page: int = 0,
-        per_page: int = 1000,
+        page: int | None = None,
+        per_page: int | None = None,
         include_metadata: bool = False,
         **data: dict[str, Any],
     ) -> dict[str, Any]:
+
+        if page is None or page <= 0:
+            page = 0
+
+        if per_page is None or per_page <= 0:
+            per_page = 1000
+
         sql_as_json = self.query_string_to_sql_json(ids=ids, page=page, per_page=per_page, **data)
 
         items = self.run_query(**sql_as_json)

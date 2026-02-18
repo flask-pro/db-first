@@ -14,7 +14,7 @@ class PaginateActionSchema(BaseSchema):
 
     ids = fields.List(fields.UUID)
     page = fields.Integer(validate=[validate.Range(min=0)])
-    per_page = fields.Integer(validate=[validate.Range(min=1)])
+    per_page = fields.Integer(validate=[validate.Range(min=0)])
     include_metadata = fields.String(validate=validate.OneOf(['enable']))
     fields = fields.List(fields.String)
 
