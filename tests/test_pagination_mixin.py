@@ -207,7 +207,7 @@ def test_controller__fields_for_relations(
     ]
 
 
-def test_controller__pagination__per_page(fx_parent_action__create, fx_parent_action__paginate):
+def test_controller__pagination__nullable(fx_parent_action__create, fx_parent_action__paginate):
     _ = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run().id for _ in range(3)]
 
     data = {'page': 0, 'per_page': 0, 'include_metadata': 'enable'}
