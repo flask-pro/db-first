@@ -33,7 +33,7 @@ class ModelMixin:
     )
 
     @staticmethod
-    def validate_utc_timezone(key: str, value: datetime or None) -> datetime:
+    def validate_utc_timezone(key: str, value: datetime) -> datetime:
         time_zone = getattr(value, 'tzinfo', None)
         if time_zone != timezone.utc:
             raise ValueError(
