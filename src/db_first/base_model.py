@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from datetime import timezone
 
-from marshmallow import Schema
 from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -20,8 +19,6 @@ def make_datetime_with_utc() -> datetime:
 class ModelMixin:
     """Mixin for table model."""
 
-    _to_dict_schemas: Schema
-
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, nullable=False, default=make_uuid4, comment='UUID'
     )
@@ -36,7 +33,7 @@ class ModelMixin:
     )
 
     @staticmethod
-    def validate_utc_timezone(key: str, value: datetime or None) -> datetime:
+    def validate_utc_timezone(key: str, value: datetime) -> datetime:
         time_zone = getattr(value, 'tzinfo', None)
         if time_zone != timezone.utc:
             raise ValueError(

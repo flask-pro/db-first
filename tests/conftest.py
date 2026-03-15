@@ -3,10 +3,7 @@ from uuid import UUID
 
 import pytest
 from db_first import ModelMixin
-from db_first.actions import BaseAction
-from db_first.actions import BaseWebAction
 from db_first.dbal import SqlaDBAL
-from db_first.schemas import PaginateActionSchema
 from db_first.statement_maker import StatementMaker
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
@@ -19,10 +16,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 
-from tests.contrib.schemas import ChildSchema
-from tests.contrib.schemas import FatherSchema
 from tests.contrib.schemas import ParentPaginationSchema
-from tests.contrib.schemas import ParentSchema
 
 UNIQUE_STRING = (f'name_{number}' for number in range(1_000))
 
@@ -68,8 +62,6 @@ def fx_db(fx_db_connection):
     class Fathers(Base, ModelMixin):
         __tablename__ = 'fathers'
 
-        _to_dict_schemas = ParentSchema
-
         first: Mapped[str] = mapped_column()
         second: Mapped[str | None] = mapped_column()
 
@@ -89,120 +81,80 @@ def fx_parent_dbal(fx_db):
 
 
 @pytest.fixture(scope='session')
-def fx_parent_action__paginate(fx_db, fx_parent_dbal):
+def fx_parent__paginate(fx_db, fx_parent_dbal):
     session_db, parents_model, _, _ = fx_db
 
-    def _create_action(data: dict[str, Any]):
-        class PaginateAction(BaseWebAction):
-            def permit(self) -> None:
-                pass
+    def _f(data: dict[str, Any]):
+        params = {k: v for k, v in data.items() if k not in ['fields']}
 
-            def validate(self) -> None:
-                PaginateActionSchema().load(self._data)
+        result = fx_parent_dbal(session_db).paginate(**params)
 
-            def action(self) -> dict[str, Any]:
-                params = {k: v for k, v in self._data.items() if k not in ['fields']}
-                result = fx_parent_dbal(session_db).paginate(**params)
-                return result
+        only = data.get('fields')
+        serialized_result = ParentPaginationSchema(only=only).dump(result)
 
-            def serialization(self) -> None:
-                only = self._data.get('fields')
-                serialized_result = ParentPaginationSchema(only=only).dump(self.result)
-                return serialized_result
+        return serialized_result
 
-        return PaginateAction(session_db, data)
-
-    return _create_action
+    return _f
 
 
 @pytest.fixture(scope='session')
-def fx_parent_action__create(fx_db, fx_parent_dbal):
+def fx_parent__create(fx_db, fx_parent_dbal):
     session_db, parents_model, _, _ = fx_db
 
-    def _create_action(data: dict[str, Any]):
-        class CreateAction(BaseAction):
-            def validate(self) -> None:
-                ParentSchema(exclude=['id']).load(self._data)
+    def _f(data: dict[str, Any]):
+        return fx_parent_dbal(session_db).create(**data)
 
-            def action(self) -> None:
-                return fx_parent_dbal(session_db).create(**self._data)
-
-        return CreateAction(session_db, data)
-
-    return _create_action
+    return _f
 
 
 @pytest.fixture(scope='session')
-def fx_parent_action__update(fx_db, fx_parent_dbal):
+def fx_parent__update(fx_db, fx_parent_dbal):
     session_db, parents_model, _, _ = fx_db
 
-    def _create_action(data: dict[str, Any]):
-        class UpdateAction(BaseAction):
-            def validate(self) -> None:
-                ParentSchema().load(self._data)
+    def _f(data: dict[str, Any]):
+        return fx_parent_dbal(session_db).update(**data)
 
-            def action(self) -> None:
-                return fx_parent_dbal(session_db).update(**self._data)
-
-        return UpdateAction(session_db, data)
-
-    return _create_action
+    return _f
 
 
 @pytest.fixture(scope='session')
-def fx_child_action__create(fx_db, fx_parent_dbal):
+def fx_child__create(fx_db, fx_parent_dbal):
     session_db, _, child_model, _ = fx_db
 
     class ChildDBAL(SqlaDBAL[child_model]):
         """DBAL for Children."""
 
-    def _create_action(data: dict[str, Any]):
-        class CreateAction(BaseAction):
-            def validate(self) -> None:
-                ChildSchema(exclude=['id']).load(self._data)
+    def _f(data: dict[str, Any]):
+        return ChildDBAL(session_db).create(**data)
 
-            def action(self) -> None:
-                return ChildDBAL(session_db).create(**self._data)
-
-        return CreateAction(session_db, data)
-
-    return _create_action
+    return _f
 
 
 @pytest.fixture(scope='session')
-def fx_father_action__create(fx_db, fx_parent_dbal):
+def fx_father__create(fx_db, fx_parent_dbal):
     session_db, _, _, father_model = fx_db
 
     class FathersDBAL(SqlaDBAL[father_model]):
         """DBAL for Fathers."""
 
-    def _create_action(data: dict[str, Any]):
-        class CreateAction(BaseAction):
-            def validate(self) -> None:
-                FatherSchema(exclude=['id']).load(self._data)
+    def _f(data: dict[str, Any]):
+        return FathersDBAL(session_db).create(**data)
 
-            def action(self) -> None:
-                return FathersDBAL(session_db).create(**self._data)
-
-        return CreateAction(session_db, data)
-
-    return _create_action
+    return _f
 
 
 @pytest.fixture
-def fx_parents__non_deletion(
-    fx_parent_action__create, fx_child_action__create, fx_father_action__create
-):
+def fx_parents__non_deletion(fx_parent__create, fx_child__create, fx_father__create):
     def _create_item() -> Result:
-        new_father = fx_father_action__create({'first': next(UNIQUE_STRING)}).run()
+        new_father = fx_father__create({'first': next(UNIQUE_STRING)})
 
         parent_data = {
             'first': next(UNIQUE_STRING),
             'second': f'full {next(UNIQUE_STRING)}',
             'father_id': new_father.id,
         }
-        new_parent = fx_parent_action__create(parent_data).run()
-        fx_child_action__create({'first': next(UNIQUE_STRING), 'parent_id': new_parent.id}).run()
+        new_parent = fx_parent__create(parent_data)
+        fx_child__create({'first': next(UNIQUE_STRING), 'parent_id': new_parent.id})
         return new_parent
 
     return _create_item

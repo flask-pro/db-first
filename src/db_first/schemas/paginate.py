@@ -8,7 +8,7 @@ from marshmallow import validate
 from marshmallow import ValidationError
 
 
-class PaginateActionSchema(BaseSchema):
+class PaginateSchema(BaseSchema):
     class Meta:
         unknown = INCLUDE
 
