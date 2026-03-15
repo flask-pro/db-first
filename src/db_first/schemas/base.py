@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timezone
+from typing import Any
 
 from marshmallow import post_dump
 from marshmallow import RAISE
@@ -15,7 +16,7 @@ class BaseSchema(Schema):
         unknown = RAISE
 
     @post_dump()
-    def _delete_keys_with_empty_value(self, data, many=False) -> dict or list:
+    def _delete_keys_with_empty_value(self, data: Any, many: bool = False) -> Any:
         """Clearing hierarchical structures from empty values.
 
         Cleaning occurs for objects of the list and dict types, other types do not clean.
@@ -50,7 +51,7 @@ class BaseSchema(Schema):
             return data
 
     @staticmethod
-    def validate_utc_timezone(key: str, value: datetime or None) -> None:
+    def validate_utc_timezone(key: str, value: datetime) -> None:
         time_zone = getattr(value, 'tzinfo', None)
         if time_zone != timezone.utc:
             raise ValueError(

@@ -2,17 +2,17 @@ from datetime import timezone
 from math import ceil
 from uuid import UUID
 
-import marshmallow
 import pytest
+from db_first.dbal.exceptions import DBALPaginateException
 
 from tests.conftest import UNIQUE_STRING
 
 
-def test_controller__pagination(fx_parent_action__create, fx_parent_action__paginate):
-    ids = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run().id for _ in range(3)]
+def test_pagination__pagination(fx_parent__create, fx_parent__paginate):
+    ids = [fx_parent__create({'first': next(UNIQUE_STRING)}).id for _ in range(3)]
 
-    data = {'page': 0, 'per_page': 2, 'ids': ids, 'fields': ['items.id', 'items.first']}
-    items = fx_parent_action__paginate(data).run()
+    data = {'page': 1, 'per_page': 2, 'ids': ids, 'fields': ['items.id', 'items.first']}
+    items = fx_parent__paginate(data)
 
     assert items['items']
     assert len(items['items']) == 2
@@ -21,72 +21,68 @@ def test_controller__pagination(fx_parent_action__create, fx_parent_action__pagi
         assert isinstance(item['first'], str)
 
     data = {'page': 1, 'per_page': 2, 'ids': ids, 'fields': ['items.id', 'items.first']}
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
 
     assert items['items']
-    assert len(items['items']) == 1
+    assert len(items['items']) == 2
     for item in items['items']:
         assert UUID(item['id'])
         assert isinstance(item['first'], str)
 
 
-def test_controller__sorting(fx_parent_action__create, fx_parent_action__paginate):
-    ids = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run().id for _ in range(3)]
+def test_pagination__sorting(fx_parent__create, fx_parent__paginate):
+    ids = [fx_parent__create({'first': next(UNIQUE_STRING)}).id for _ in range(3)]
 
     data = {'ids': ids, 'sort__created_at': 'asc'}
-    items_asc = fx_parent_action__paginate(data).run()
+    items_asc = fx_parent__paginate(data)
     asc_ids = [item['id'] for item in items_asc['items']]
 
     data = {'ids': ids, 'sort__created_at': 'desc'}
-    items_desc = fx_parent_action__paginate(data).run()
+    items_desc = fx_parent__paginate(data)
     desc_ids = [item['id'] for item in items_desc['items']]
 
     assert asc_ids[0] == desc_ids[-1]
 
 
-def test_controller__searching(fx_parent_action__create, fx_parent_action__paginate):
-    new_item = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+def test_pagination__searching(fx_parent__create, fx_parent__paginate):
+    new_item = fx_parent__create({'first': next(UNIQUE_STRING)})
+    fx_parent__create({'first': next(UNIQUE_STRING)})
     search_substring = new_item.first[3:]
 
     data = {'fields': ['items.id', 'items.first'], 'contain__first': search_substring}
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
     for item in items['items']:
         assert search_substring in item['first']
 
 
-def test_controller__get_fields_of_list(
-    fx_db, fx_parent_action__create, fx_parent_action__paginate
-):
+def test_pagination__get_fields_of_list(fx_db, fx_parent__create, fx_parent__paginate):
     _, _, _, Fathers = fx_db
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+    fx_parent__create({'first': next(UNIQUE_STRING)})
 
     data = {'fields': ['items.id', 'items.first']}
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
 
     assert list(items['items'][0]) == ['id', 'first']
 
 
-def test_controller__filtrating(
-    fx_parent_action__create, fx_parent_action__update, fx_parent_action__paginate
-):
-    first_item = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    _ = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run() for _ in range(10)]
+def test_pagination__filtrating(fx_parent__create, fx_parent__update, fx_parent__paginate):
+    first_item = fx_parent__create({'first': next(UNIQUE_STRING)})
+    _ = [fx_parent__create({'first': next(UNIQUE_STRING)}) for _ in range(10)]
 
     patched_item_payload = {'id': first_item.id, 'first': 'first for test filtrating'}
-    patched_first_item = fx_parent_action__update(patched_item_payload).run()
+    patched_first_item = fx_parent__update(patched_item_payload)
 
     data = {'eq__first': patched_first_item.first}
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
 
     assert len(items['items']) == 1
     assert items['items'][0]['id'] == str(first_item.id)
 
 
-def test_controller__interval_filtration(fx_parent_action__create, fx_parent_action__paginate):
-    item_1 = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    item_2 = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    item_3 = fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+def test_pagination__interval_filtration(fx_parent__create, fx_parent__paginate):
+    item_1 = fx_parent__create({'first': next(UNIQUE_STRING)})
+    item_2 = fx_parent__create({'first': next(UNIQUE_STRING)})
+    item_3 = fx_parent__create({'first': next(UNIQUE_STRING)})
 
     data = {
         'ids': [item_1.id, item_2.id, item_3.id],
@@ -94,7 +90,7 @@ def test_controller__interval_filtration(fx_parent_action__create, fx_parent_act
         'ge__created_at': item_1.created_at.replace(tzinfo=timezone.utc),
         'le__created_at': item_2.created_at.replace(tzinfo=timezone.utc),
     }
-    items_asc = fx_parent_action__paginate(data).run()
+    items_asc = fx_parent__paginate(data)
 
     assert items_asc['items']
     assert len(items_asc['items']) == 2
@@ -107,7 +103,7 @@ def test_controller__interval_filtration(fx_parent_action__create, fx_parent_act
         'ge__created_at': item_1.created_at.replace(tzinfo=timezone.utc),
         'le__created_at': item_2.created_at.replace(tzinfo=timezone.utc),
     }
-    items_desc = fx_parent_action__paginate(data).run()
+    items_desc = fx_parent__paginate(data)
 
     assert items_desc['items']
     assert len(items_desc['items']) == 2
@@ -117,26 +113,22 @@ def test_controller__interval_filtration(fx_parent_action__create, fx_parent_act
 
 @pytest.mark.parametrize('page', [-1])
 @pytest.mark.parametrize('per_page', [-1, 0])
-def test_controller__get_non_exist_page(
-    fx_parent_action__create, fx_parent_action__paginate, page, per_page
-):
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+def test_pagination__get_non_exist_page(fx_parent__create, fx_parent__paginate, page, per_page):
+    fx_parent__create({'first': next(UNIQUE_STRING)})
 
     data = {'page': page, 'per_page': per_page, 'include_metadata': 'enable'}
-    with pytest.raises(marshmallow.exceptions.ValidationError):
-        fx_parent_action__paginate(data).run()
+    with pytest.raises(DBALPaginateException):
+        fx_parent__paginate(data)
 
 
-@pytest.mark.parametrize('page', [0, 1])
+@pytest.mark.parametrize('page', [1, 2])
 @pytest.mark.parametrize('per_page', [1, 2])
-def test_controller__get_pages(
-    fx_parent_action__create, fx_parent_action__paginate, page, per_page
-):
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+def test_pagination__get_pages(fx_parent__create, fx_parent__paginate, page, per_page):
+    fx_parent__create({'first': next(UNIQUE_STRING)})
+    fx_parent__create({'first': next(UNIQUE_STRING)})
 
     data = {'page': page, 'per_page': per_page, 'include_metadata': 'enable'}
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
 
     assert items['_metadata']['pagination']['page'] == page
     assert items['_metadata']['pagination']['per_page'] == per_page
@@ -144,41 +136,33 @@ def test_controller__get_pages(
         items['_metadata']['pagination']['total'] / per_page
     )
     assert items['_metadata']['pagination']['total'] > 1
-    assert items['items']
+    assert len(items['items']) == per_page
 
 
-def test_controller__without_meta_pagination(
-    fx_db, fx_parent_action__create, fx_parent_action__paginate
-):
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
-    fx_parent_action__create({'first': next(UNIQUE_STRING)}).run()
+def test_pagination__without_meta_pagination(fx_db, fx_parent__create, fx_parent__paginate):
+    fx_parent__create({'first': next(UNIQUE_STRING)})
+    fx_parent__create({'first': next(UNIQUE_STRING)})
 
-    data = {'page': 0, 'per_page': 2}
-    items = fx_parent_action__paginate(data).run()
+    data = {'page': 1, 'per_page': 2}
+    items = fx_parent__paginate(data)
 
     assert '_metadata' not in items
     assert items['items']
 
 
-def test_controller__fields_for_relations(
-    fx_parent_action__create,
-    fx_child_action__create,
-    fx_father_action__create,
-    fx_parent_action__paginate,
+def test_pagination__fields_for_relations(
+    fx_parent__create,
+    fx_child__create,
+    fx_father__create,
+    fx_parent__paginate,
 ):
-    new_father_1 = fx_father_action__create({'first': next(UNIQUE_STRING)}).run()
-    new_parent_1 = fx_parent_action__create(
-        {'first': next(UNIQUE_STRING), 'father_id': new_father_1.id}
-    ).run()
-    fx_child_action__create({'first': next(UNIQUE_STRING), 'parent_id': new_parent_1.id}).run()
+    new_father_1 = fx_father__create({'first': next(UNIQUE_STRING)})
+    new_parent_1 = fx_parent__create({'first': next(UNIQUE_STRING), 'father_id': new_father_1.id})
+    fx_child__create({'first': next(UNIQUE_STRING), 'parent_id': new_parent_1.id})
 
-    new_father = fx_father_action__create({'first': next(UNIQUE_STRING)}).run()
-    new_parent = fx_parent_action__create(
-        {'first': next(UNIQUE_STRING), 'father_id': new_father.id}
-    ).run()
-    new_child = fx_child_action__create(
-        {'first': next(UNIQUE_STRING), 'parent_id': new_parent.id}
-    ).run()
+    new_father = fx_father__create({'first': next(UNIQUE_STRING)})
+    new_parent = fx_parent__create({'first': next(UNIQUE_STRING), 'father_id': new_father.id})
+    new_child = fx_child__create({'first': next(UNIQUE_STRING), 'parent_id': new_parent.id})
 
     data = {
         'fields': [
@@ -192,7 +176,7 @@ def test_controller__fields_for_relations(
         ],
         'eq__id': new_parent.id,
     }
-    items = fx_parent_action__paginate(data).run()
+    items = fx_parent__paginate(data)
 
     assert len(items['items']) == 1
     assert items['items'][0]['id'] == str(new_parent.id)
@@ -207,13 +191,9 @@ def test_controller__fields_for_relations(
     ]
 
 
-def test_controller__pagination__nullable(fx_parent_action__create, fx_parent_action__paginate):
-    _ = [fx_parent_action__create({'first': next(UNIQUE_STRING)}).run().id for _ in range(3)]
+def test_pagination__pagination__nullable(fx_parent__create, fx_parent__paginate):
+    _ = [fx_parent__create({'first': next(UNIQUE_STRING)}).id for _ in range(3)]
 
     data = {'page': 0, 'per_page': 0, 'include_metadata': 'enable'}
-    items = fx_parent_action__paginate(data).run()
-
-    assert items['items']
-    assert items['_metadata']['pagination']['page'] == 0
-    assert items['_metadata']['pagination']['per_page'] == 1000
-    assert items['_metadata']['pagination']['pages'] == 1
+    with pytest.raises(DBALPaginateException):
+        fx_parent__paginate(data)

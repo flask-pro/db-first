@@ -1,3 +1,7 @@
+## Version 5.2.0
+
+* Remove actions classes.
+
 ## Version 5.1.3
 
 * Fix `paginate` method from `PageMixin`.

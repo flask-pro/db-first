@@ -2,6 +2,7 @@ from math import ceil
 from typing import Any
 
 import sqlalchemy as sa
+from db_first.dbal.exceptions import DBALPaginateException
 from db_first.statement_maker import StatementMaker
 from sqlalchemy import func
 
@@ -40,7 +41,7 @@ class PageMixin:
         ids: list[str] | None = None,
         **params: dict[str, Any],
     ) -> dict[str, Any]:
-        sql_as_json = {'limit': per_page, 'offset': per_page * page}
+        sql_as_json = {'limit': per_page, 'offset': (page - 1) * per_page}
 
         order_by, filters = self._extract_expressions(params)
 
@@ -62,17 +63,17 @@ class PageMixin:
     def paginate(
         self,
         ids: list[str] | None = None,
-        page: int | None = None,
-        per_page: int | None = None,
+        page: int = 1,
+        per_page: int = 20,
         include_metadata: bool = False,
         **data: dict[str, Any],
     ) -> dict[str, Any]:
 
-        if page is None or page <= 0:
-            page = 0
+        if page < 1:
+            raise DBALPaginateException(f'Page <{page}> must be greater <1>.')
 
-        if per_page is None or per_page <= 0:
-            per_page = 1000
+        if per_page < 1:
+            raise DBALPaginateException(f'Page <{per_page}> must be greater <1>.')
 
         sql_as_json = self.query_string_to_sql_json(ids=ids, page=page, per_page=per_page, **data)
 
