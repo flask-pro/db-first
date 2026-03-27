@@ -20,9 +20,7 @@ def test_dbal__bulk_create(fx_db, fx_parent_dbal):
     data = [{'first': next(UNIQUE_STRING)}]
     fx_parent_dbal(session_db).bulk_create(data)
 
-    result = fx_parent_dbal(session_db).run_query(
-        where={'and': [{'col': 'first', 'opr': 'eq', 'value': data[0]['first']}]}
-    )
+    result = fx_parent_dbal(session_db).read_filtered_list(first=data[0]['first'])
 
     assert result[0].id
     assert result[0].first == data[0]['first']

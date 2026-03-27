@@ -139,6 +139,18 @@ def test_pagination__get_pages(fx_parent__create, fx_parent__paginate, page, per
     assert len(items['items']) == per_page
 
 
+def test_pagination__count_pages_total(fx_parent__create, fx_parent__paginate):
+    item_1 = fx_parent__create({'first': next(UNIQUE_STRING)})
+    fx_parent__create({'first': next(UNIQUE_STRING)})
+
+    data = {'eq__id': item_1.id, 'include_metadata': 'enable'}
+    items = fx_parent__paginate(data)
+
+    assert items['_metadata']['pagination']['pages'] == 1
+    assert items['_metadata']['pagination']['total'] == 1
+    assert len(items['items']) == 1
+
+
 def test_pagination__without_meta_pagination(fx_db, fx_parent__create, fx_parent__paginate):
     fx_parent__create({'first': next(UNIQUE_STRING)})
     fx_parent__create({'first': next(UNIQUE_STRING)})

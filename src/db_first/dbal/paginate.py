@@ -1,7 +1,6 @@
 from math import ceil
 from typing import Any
 
-import sqlalchemy as sa
 from db_first.dbal.exceptions import DBALPaginateException
 from db_first.statement_maker import StatementMaker
 from sqlalchemy import func
@@ -56,10 +55,6 @@ class PageMixin:
 
         return sql_as_json
 
-    def run_query(self, **data: dict[str, Any]):
-        stmt = StatementMaker(self._model, **data).make_stmt()
-        return self._session.scalars(stmt).all()
-
     def paginate(
         self,
         ids: list[str] | None = None,
@@ -77,13 +72,18 @@ class PageMixin:
 
         sql_as_json = self.query_string_to_sql_json(ids=ids, page=page, per_page=per_page, **data)
 
-        items = self.run_query(**sql_as_json)
+        statement = StatementMaker(self._model, **sql_as_json).make_stmt()
+        items = self._session.scalars(statement).all()
 
         result = {'items': items}
 
         if include_metadata:
             total = self._session.scalar(
-                sa.select(func.count()).select_from(self._model).order_by(None)
+                statement.with_only_columns(func.count())
+                .select_from(self._model)
+                .order_by(None)
+                .limit(None)
+                .offset(None)
             )
 
             pages = ceil(total / per_page)

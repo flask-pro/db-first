@@ -1,3 +1,7 @@
+## Version 5.2.1
+
+* Fix count for paginate.
+
 ## Version 5.2.0
 
 * Remove actions classes.
