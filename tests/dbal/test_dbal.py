@@ -155,3 +155,28 @@ def test_dbal__read_filtered_list(fx_db, fx_parent_dbal):
     result = fx_parent_dbal(session_db).read_filtered_list(first=new_3.first, second=None)
 
     assert result == [new_3]
+
+
+def test_dbal__read_filtered_list_with_sort(fx_db, fx_parent_dbal):
+    session_db, parents_model, _, _ = fx_db
+
+    new_1 = fx_parent_dbal(session_db).create(**{'first': next(UNIQUE_STRING)})
+    new_2 = fx_parent_dbal(session_db).create(**{'first': next(UNIQUE_STRING)})
+    new_3 = fx_parent_dbal(session_db).create(**{'first': next(UNIQUE_STRING)})
+    fx_parent_dbal(session_db).create(**{'first': new_3.first, 'second': 'Not None'})
+
+    result = fx_parent_dbal(session_db).read_filtered_list(first=[new_1.first, new_2.first])
+
+    assert result == [new_1, new_2]
+
+    result = fx_parent_dbal(session_db).read_filtered_list(
+        first=[new_1.first, new_2.first], sort_order='asc', sort_field='first'
+    )
+
+    assert result == [new_1, new_2]
+
+    result = fx_parent_dbal(session_db).read_filtered_list(
+        first=[new_1.first, new_2.first], sort_order='desc', sort_field='first'
+    )
+
+    assert result == [new_2, new_1]
