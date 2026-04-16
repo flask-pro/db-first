@@ -1,5 +1,6 @@
 from typing import Any
 from typing import get_args
+from typing import Literal
 
 from db_first.dbal.exceptions import DBALCreateException
 from db_first.dbal.exceptions import DBALObjectNotFoundException
@@ -78,7 +79,9 @@ class SqlaDBAL[M](PageMixin):
         except NoResultFound as e:
             raise DBALObjectNotFoundException(repr(e))
 
-    def read_filtered_list(self, **kwargs) -> Sequence[M]:
+    def read_filtered_list(
+        self, sort_order: Literal['asc', 'desc'] = 'asc', sort_field: str | None = None, **kwargs
+    ) -> Sequence[M]:
         filters = []
         for k, v in kwargs.items():
             if isinstance(v, list):
@@ -87,6 +90,14 @@ class SqlaDBAL[M](PageMixin):
                 filters.append(getattr(self._model, k) == v)
 
         stmt = select(self._model).where(*filters)
+
+        if sort_field:
+            if sort_order == 'desc':
+                order_column = getattr(self._model, sort_field).desc()
+            else:
+                order_column = getattr(self._model, sort_field)
+            stmt = stmt.order_by(order_column)
+
         return self._session.scalars(stmt).all()
 
     def update(self, id: Any, **data) -> M:

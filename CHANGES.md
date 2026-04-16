@@ -1,3 +1,7 @@
+## Version 5.2.2
+
+* Add parameter sorting result for `read_filtered_list`.
+
 ## Version 5.2.1
 
 * Fix count for paginate.
