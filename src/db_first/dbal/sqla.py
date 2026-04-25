@@ -2,8 +2,12 @@ from typing import Any
 from typing import get_args
 from typing import Literal
 
+from db_first.dbal.exceptions import DBALColumnNonExistException
 from db_first.dbal.exceptions import DBALCreateException
+from db_first.dbal.exceptions import DBALForeignKeyConstraintFailedException
+from db_first.dbal.exceptions import DBALNotNullConstraintFailedException
 from db_first.dbal.exceptions import DBALObjectNotFoundException
+from db_first.dbal.exceptions import DBALUnexpectedValueTypeException
 from db_first.dbal.exceptions import DBALUpdateException
 from db_first.dbal.paginate import PageMixin
 from sqlalchemy import delete
@@ -35,15 +39,35 @@ class SqlaDBAL[M](PageMixin):
         try:
             new_obj = self._model(**kwargs)
         except TypeError as e:
-            raise DBALCreateException(repr(e))
+            raise DBALUnexpectedValueTypeException(e)
 
         self._session.add(new_obj)
 
         try:
             self._session.commit()
-        except (IntegrityError, ProgrammingError) as e:
+
+        except CompileError as e:
             self._session.rollback()
-            raise DBALCreateException(repr(e))
+            if e.args[0].startswith('Unconsumed column names:'):
+                raise DBALColumnNonExistException(e)
+            else:
+                raise DBALCreateException(e)
+
+        except IntegrityError as e:
+            self._session.rollback()
+            if e.orig.args[0].startswith('NOT NULL constraint failed: '):
+                raise DBALNotNullConstraintFailedException(e)
+            elif e.orig.args[0].startswith('FOREIGN KEY constraint failed'):
+                raise DBALForeignKeyConstraintFailedException(e)
+            else:
+                raise DBALCreateException(e)
+
+        except ProgrammingError as e:
+            self._session.rollback()
+            raise DBALUnexpectedValueTypeException(e)
+
+        except Exception as e:
+            raise DBALCreateException(e)
 
         return new_obj
 
@@ -51,7 +75,7 @@ class SqlaDBAL[M](PageMixin):
         try:
             new_objects = self._session.execute(insert(self._model), data)
         except (IntegrityError, ProgrammingError) as e:
-            raise DBALCreateException(repr(e))
+            raise DBALCreateException(e)
 
         return new_objects
 
@@ -61,7 +85,7 @@ class SqlaDBAL[M](PageMixin):
         try:
             return self._session.scalars(stmt).one()
         except NoResultFound as e:
-            raise DBALObjectNotFoundException(repr(e))
+            raise DBALObjectNotFoundException(e)
 
     def bulk_read(self, ids: list[Any]) -> Sequence[M]:
         return self.read_filtered_list(id=ids)
@@ -77,7 +101,7 @@ class SqlaDBAL[M](PageMixin):
         try:
             return self._session.scalars(stmt).one()
         except NoResultFound as e:
-            raise DBALObjectNotFoundException(repr(e))
+            raise DBALObjectNotFoundException(e)
 
     def read_filtered_list(
         self, sort_order: Literal['asc', 'desc'] = 'asc', sort_field: str | None = None, **kwargs
@@ -105,8 +129,25 @@ class SqlaDBAL[M](PageMixin):
 
         try:
             obj = self._session.scalars(stmt).one()
-        except (CompileError, IntegrityError, ProgrammingError) as e:
-            raise DBALUpdateException(repr(e))
+        except CompileError as e:
+            if e.args[0].startswith('Unconsumed column names:'):
+                raise DBALColumnNonExistException(e)
+            else:
+                raise DBALUpdateException(e)
+
+        except IntegrityError as e:
+            if e.orig.args[0].startswith('NOT NULL constraint failed: '):
+                raise DBALNotNullConstraintFailedException(e)
+            elif e.orig.args[0].startswith('FOREIGN KEY constraint failed'):
+                raise DBALForeignKeyConstraintFailedException(e)
+            else:
+                raise DBALUpdateException(e)
+
+        except ProgrammingError as e:
+            raise DBALUnexpectedValueTypeException(e)
+
+        except Exception as e:
+            raise DBALUpdateException(e)
 
         return obj
 
@@ -114,9 +155,9 @@ class SqlaDBAL[M](PageMixin):
         try:
             self._session.execute(update(self._model), data)
         except ProgrammingError as e:
-            raise DBALUpdateException(repr(e))
+            raise DBALUpdateException(e)
         except StaleDataError as e:
-            raise DBALObjectNotFoundException(repr(e))
+            raise DBALObjectNotFoundException(e)
 
     def delete(self, id: Any) -> None:
         self._session.execute(delete(self._model).where(self._model.id == id))

@@ -8,6 +8,7 @@ from db_first.statement_maker import StatementMaker
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy import Select
+from sqlalchemy import text
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base
@@ -26,6 +27,9 @@ def fx_db_connection():
     engine = create_engine('sqlite://', echo=True, future=True)
     session = Session(engine)
     Base = declarative_base()
+
+    session.execute(text('PRAGMA foreign_keys=ON'))
+
     return Base, engine, session
 
 

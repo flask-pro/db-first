@@ -25,17 +25,17 @@ license = {file = "LICENSE"}
 name = "DB-First"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "5.2.2"
+version = "5.3.0"
 
 [project.optional-dependencies]
 dev = [
-  "build==1.4.3",
+  "build==1.4.4",
   "psycopg[binary]==3.3.3",
-  "pre-commit==4.5.1",
+  "pre-commit==4.6.0",
   "pytest==9.0.3",
   "pytest-cov==7.1.0",
   "python-dotenv==1.2.2",
-  "tox==4.34.1",
+  "tox==4.53.0",
   "twine==6.2.0"
 ]
 
