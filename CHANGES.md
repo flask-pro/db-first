@@ -1,3 +1,7 @@
+## Version 5.3.0
+
+* Create specific exceptions for errors.
+
 ## Version 5.2.2
 
 * Add parameter sorting result for `read_filtered_list`.
