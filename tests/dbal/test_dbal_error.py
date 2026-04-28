@@ -49,7 +49,7 @@ def test_dbal__create_error__not_null_constraint_failed(fx_db, fx_parent_dbal):
     with pytest.raises(DBALNotNullConstraintFailedException) as e:
         fx_parent_dbal(session_db).create(**data)
 
-    assert e.value.args[0].orig.args[0] == 'NOT NULL constraint failed: parents.first'
+    assert e.value.args[0] == 'NOT NULL constraint failed: parents.first'
 
 
 def test_dbal__create_error__foreign_key_constraint_failed(fx_db, fx_parent_dbal):
@@ -60,7 +60,7 @@ def test_dbal__create_error__foreign_key_constraint_failed(fx_db, fx_parent_dbal
     with pytest.raises(DBALForeignKeyConstraintFailedException) as e:
         fx_parent_dbal(session_db).create(**data)
 
-    assert e.value.args[0].orig.args[0] == 'FOREIGN KEY constraint failed'
+    assert e.value.args[0] == 'FOREIGN KEY constraint failed'
 
 
 @pytest.mark.parametrize('data', [{'first': [1, 2, 3]}])
@@ -123,7 +123,7 @@ def test_dbal__update_error__not_null_constraint_failed(fx_db, fx_parent_dbal):
     with pytest.raises(DBALNotNullConstraintFailedException) as e:
         fx_parent_dbal(session_db).update(new.id, **updated_params)
 
-    assert e.value.args[0].orig.args[0] == 'NOT NULL constraint failed: parents.first'
+    assert e.value.args[0] == 'NOT NULL constraint failed: parents.first'
 
 
 def test_dbal__update_error__foreign_key_constraint_failed(fx_db, fx_parent_dbal):
@@ -137,7 +137,7 @@ def test_dbal__update_error__foreign_key_constraint_failed(fx_db, fx_parent_dbal
     with pytest.raises(DBALForeignKeyConstraintFailedException) as e:
         fx_parent_dbal(session_db).update(new.id, **updated_params)
 
-    assert e.value.args[0].orig.args[0] == 'FOREIGN KEY constraint failed'
+    assert e.value.args[0] == 'FOREIGN KEY constraint failed'
 
 
 @pytest.mark.parametrize('data', [{'first': [1, 2, 3]}])
