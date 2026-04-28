@@ -24,6 +24,28 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 
+def compile_error_handler(e: CompileError) -> None:
+    if e.args[0].startswith('Unconsumed column names:'):
+        raise DBALColumnNonExistException(e)
+
+
+def integrity_error_handler(e: IntegrityError, s: Session) -> None:
+    db_type = s.get_bind().name
+
+    if db_type == 'sqlite':
+        if e.orig.sqlite_errorname == 'SQLITE_CONSTRAINT_NOTNULL':
+            raise DBALNotNullConstraintFailedException(e.orig.args[0])
+        if e.orig.sqlite_errorname == 'SQLITE_CONSTRAINT_FOREIGNKEY':
+            raise DBALForeignKeyConstraintFailedException(e.orig.args[0])
+
+    elif db_type == 'postgresql':
+        if 'is not present in table' in e.orig.diag.message_detail:
+            raise DBALForeignKeyConstraintFailedException(e.orig.diag.message_detail)
+
+    else:
+        raise NotImplementedError(f'DB <{db_type}> not implemented.')
+
+
 class SqlaDBAL[M](PageMixin):
     """Base SqlaDBAL, implement base CRUD sqlalchemy operations."""
 
@@ -48,19 +70,13 @@ class SqlaDBAL[M](PageMixin):
 
         except CompileError as e:
             self._session.rollback()
-            if e.args[0].startswith('Unconsumed column names:'):
-                raise DBALColumnNonExistException(e)
-            else:
-                raise DBALCreateException(e)
+            compile_error_handler(e)
+            raise DBALCreateException(e)
 
         except IntegrityError as e:
             self._session.rollback()
-            if e.orig.args[0].startswith('NOT NULL constraint failed: '):
-                raise DBALNotNullConstraintFailedException(e)
-            elif e.orig.args[0].startswith('FOREIGN KEY constraint failed'):
-                raise DBALForeignKeyConstraintFailedException(e)
-            else:
-                raise DBALCreateException(e)
+            integrity_error_handler(e, self._session)
+            raise DBALCreateException(e)
 
         except ProgrammingError as e:
             self._session.rollback()
@@ -130,18 +146,13 @@ class SqlaDBAL[M](PageMixin):
         try:
             obj = self._session.scalars(stmt).one()
         except CompileError as e:
-            if e.args[0].startswith('Unconsumed column names:'):
-                raise DBALColumnNonExistException(e)
-            else:
-                raise DBALUpdateException(e)
+            compile_error_handler(e)
+            raise DBALUpdateException(e)
 
         except IntegrityError as e:
-            if e.orig.args[0].startswith('NOT NULL constraint failed: '):
-                raise DBALNotNullConstraintFailedException(e)
-            elif e.orig.args[0].startswith('FOREIGN KEY constraint failed'):
-                raise DBALForeignKeyConstraintFailedException(e)
-            else:
-                raise DBALUpdateException(e)
+            self._session.rollback()
+            integrity_error_handler(e, self._session)
+            raise DBALUpdateException(e)
 
         except ProgrammingError as e:
             raise DBALUnexpectedValueTypeException(e)

@@ -1,3 +1,7 @@
+## Version 5.3.1
+
+* Add handlers for specific errors.
+
 ## Version 5.3.0
 
 * Create specific exceptions for errors.
